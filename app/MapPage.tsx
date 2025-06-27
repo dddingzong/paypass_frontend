@@ -326,248 +326,141 @@ const MainPage: React.FC<MainPageProps> = () => {
     longitudeDelta: 0.01,
   };
 
-  // 이용자인 경우 UI
-  if (userRole === 'user') {
-    return (
-        <SafeAreaView className="flex-1 bg-gray-50">
-          <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+  return (
+  <SafeAreaView className="flex-1 bg-gray-50">
+    <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-          {/* 상단 헤더 */}
-          <View className="bg-white shadow-lg p-6">
-            <View className="items-center">
-              <Text className="text-2xl font-bold text-gray-900 mb-1">내 위치</Text>
-              <Text className="text-sm text-gray-500">
-                {locationState.isTracking ? '원활한서비스를 위해 GPS 데이터를 수집 중 입니다.' : 'GPS 미작동 중 '}
-              </Text>
-              {locationState.error && (
-                  <Text className="text-xs text-red-500 mt-1">{locationState.error}</Text>
+    {/* 상단 헤더 */}
+    <View className="bg-white shadow-lg p-6">
+      <View className="items-center">
+        <Text className="text-2xl font-bold text-gray-900 mb-1">사용자 위치</Text>
+        <Text className="text-sm text-gray-500">
+          {locationState.isTracking
+            ? userRole === 'user'
+              ? '보호자에게 위치가 전송되고 있습니다.'
+              : '보호자께서 선택하신 이용자의 위치를 표시 중입니다.'
+            : 'GPS 미작동 중 '}
+        </Text>
+        {locationState.error && (
+          <Text className="text-xs text-red-500 mt-1">{locationState.error}</Text>
+        )}
+      </View>
+    </View>
+
+    {/* 지도 영역 */}
+    <View className="flex-1 relative">
+      <MapView
+        ref={mapRef}
+        provider={PROVIDER_GOOGLE}
+        style={{ flex: 1 }}
+        initialRegion={region}
+        customMapStyle={customMapStyle}
+        showsUserLocation={false}
+        showsMyLocationButton={false}
+        showsCompass={false}
+        toolbarEnabled={false}
+      >
+        {/* 마커 */}
+        <Marker
+          coordinate={{
+            latitude: userLocation.lat,
+            longitude: userLocation.lng,
+          }}
+          title={userLocation.name}
+          description={locationState.isTracking ? "실시간 추적 중" : "현재 위치"}
+          anchor={{ x: 0.5, y: 1 }}
+        >
+          <View style={{ alignItems: 'center', width: 40 }}>
+            <View className={`p-3 rounded-full shadow-lg border-4 border-white ${
+              locationState.isTracking ? 'bg-green-500' : 'bg-blue-500'
+            }`}>
+              {userRole === 'supporter' ? (
+                <User size={10} color="white" />
+              ) : (
+                <Navigation size={10} color="white" />
               )}
             </View>
-          </View>
-
-          {/* 지도 영역 */}
-          <View className="flex-1 relative">
-            <MapView
-                ref={mapRef}
-                provider={PROVIDER_GOOGLE}
-                style={{ flex: 1 }}
-                initialRegion={region}
-                customMapStyle={customMapStyle}
-                showsUserLocation={false}
-                showsMyLocationButton={false}
-                showsCompass={false}
-                toolbarEnabled={false}
-            >
-              <Marker
-                  coordinate={{
-                    latitude: userLocation.lat,
-                    longitude: userLocation.lng,
-                  }}
-                  title="내 위치"
-                  description={locationState.isTracking ? "실시간 추적 중" : "현재 위치"}
-                  anchor={{ x: 0.5, y: 1 }}  // 가로 중앙, 세로 하단 기준점
-              >
-                <View style={{ alignItems: 'center', width: 40 }}>
-                  <View className={`p-3 rounded-full shadow-lg border-4 border-white ${
-                      locationState.isTracking ? 'bg-green-500' : 'bg-blue-500'
-                  }`}>
-                    <Navigation size={10} color="white" />
-                  </View>
-                  <View className="mt-1 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-200">
-                    <Text className="text-xs font-medium text-gray-700">{userLocation.name}</Text>
-                  </View>
-                </View>
-              </Marker>
-            </MapView>
-
-            {/* 내 위치 버튼 */}
-            <TouchableOpacity
-                className="absolute bottom-20 right-4 bg-white p-4 rounded-full shadow-lg border border-gray-200"
-                onPress={moveToMyLocation}
-                style={{
-                  elevation: 8,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.15,
-                  shadowRadius: 8,
-                }}
-            >
-              <Locate size={24} color="#2563eb" />
-            </TouchableOpacity>
-          </View>
-
-          {/* 하단 네비게이션 */}
-          <View className="bg-white border-t border-gray-100 px-4 py-2"
-                style={{
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: -2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 8,
-                  elevation: 8,
-                }}
-          >
-            <View className="flex-row justify-center space-x-12">
-              <TouchableOpacity className="items-center py-3 px-4">
-                <View className="bg-blue-50 p-2 rounded-full">
-                  <MapPin size={24} color="#2563eb" />
-                </View>
-                <Text className="text-xs text-blue-600 mt-2 font-medium">지도</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                  className="items-center py-3 px-4"
-                  onPress={() => navigateToScreen('LogPage')}
-              >
-                <View className="bg-gray-50 p-2 rounded-full">
-                  <Bell size={24} color="#6b7280" />
-                </View>
-                <Text className="text-xs text-gray-600 mt-2">기록</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                  className="items-center py-3 px-4"
-                  onPress={() => navigateToScreen('MyPage')}
-              >
-                <View className="bg-gray-50 p-2 rounded-full">
-                  <User size={24} color="#6b7280" />
-                </View>
-                <Text className="text-xs text-gray-600 mt-2">마이페이지</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </SafeAreaView>
-    );
-  }
-
-  if (userRole === 'supporter') {
-    return (
-        <SafeAreaView className="flex-1 bg-gray-50">
-          <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-
-          {/* 상단 헤더 */}
-          <View className="bg-white shadow-lg p-6">
-            <View className="items-center">
-              <Text className="text-2xl font-bold text-gray-900 mb-1">사용자 위치</Text>
-              <Text className="text-sm text-gray-500">
-                {locationState.isTracking ? '보호자께서 선택하신 이용자의 위치를 표시 중입니다.' : 'GPS 미작동 중 '}
+            <View className="mt-1 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-200">
+              <Text className={`text-xs font-medium ${
+                locationState.isTracking ? 'text-green-600' : 'text-blue-600'
+              }`}>
+                {userLocation.name}
               </Text>
-              {locationState.error && (
-                  <Text className="text-xs text-red-500 mt-1">{locationState.error}</Text>
-              )}
             </View>
           </View>
+        </Marker>
+      </MapView>
 
-          {/* 지도 영역 */}
-          <View className="flex-1 relative">
-            <MapView
-                ref={mapRef}
-                provider={PROVIDER_GOOGLE}
-                style={{ flex: 1 }}
-                initialRegion={region}
-                customMapStyle={customMapStyle}
-                showsUserLocation={false}
-                showsMyLocationButton={false}
-                showsCompass={false}
-                toolbarEnabled={false}
-            >
-              {/* 이용자 마커 */}
-              <Marker
-                coordinate={{
-                  latitude: userLocation.lat,
-                  longitude: userLocation.lng,
-                }}
-                  title={userLocation.name}
-                  description={locationState.isTracking ? "실시간 추적 중" : "이용자 위치"}
-                  anchor={{ x: 0.5, y: 1 }}  // 가로 중앙, 세로 하단 기준점
-                >
-                  <View style={{ alignItems: 'center', width: 40 }}>
-                  <View className={`p-3 rounded-full shadow-lg border-4 border-white ${
-                      locationState.isTracking ? 'bg-green-500' : 'bg-blue-500'
-                  }`}>
-                    <User size={10} color="white" />
-                  </View>
-                  <View className="mt-1 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-200">
-                    <Text className={`text-xs font-medium ${
-                        locationState.isTracking ? 'text-green-600' : 'text-blue-600'
-                    }`}>
-                      {userLocation.name}
-                    </Text>
-                  </View>
-                </View>
-              </Marker>
-            </MapView>
+      {/* 내 위치 버튼 */}
+      <TouchableOpacity
+        className="absolute bottom-20 right-4 bg-white p-4 rounded-full shadow-lg border border-gray-200"
+        onPress={moveToMyLocation}
+        style={{
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.15,
+          shadowRadius: 8,
+        }}
+      >
+        <Locate size={24} color="#2563eb" />
+      </TouchableOpacity>
+    </View>
 
-            {/* 내 위치 버튼 */}
-            <TouchableOpacity
-                className="absolute bottom-20 right-4 bg-white p-4 rounded-full shadow-lg border border-gray-200"
-                onPress={moveToMyLocation}
-                style={{
-                  elevation: 8,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.15,
-                  shadowRadius: 8,
-                }}
-            >
-              <Locate size={24} color="#2563eb" />
-            </TouchableOpacity>
-
+    {/* 하단 네비게이션 */}
+    <View className="bg-white border-t border-gray-100 px-4 py-2"
+          style={{
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 8,
+          }}
+    >
+      <View className="flex-row justify-center space-x-6">
+        <TouchableOpacity className="items-center py-3 px-4">
+          <View className="bg-blue-50 p-2 rounded-full">
+            <MapPin size={24} color="#2563eb" />
           </View>
+          <Text className="text-xs text-blue-600 mt-2 font-medium">지도</Text>
+        </TouchableOpacity>
 
-          {/* 하단 네비게이션*/}
-          <View className="bg-white border-t border-gray-100 px-4 py-2"
-                style={{
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: -2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 8,
-                  elevation: 8,
-                }}
+        {/* supporter만 보는 메뉴 */}
+        {userRole === 'supporter' && (
+          <TouchableOpacity
+            className="items-center py-3 px-4"
+            onPress={() => navigateToScreen('LinkPage')}
           >
-            <View className="flex-row justify-center space-x-6">
-              <TouchableOpacity className="items-center py-3 px-4">
-                <View className="bg-blue-50 p-2 rounded-full">
-                  <MapPin size={24} color="#2563eb" />
-                </View>
-                <Text className="text-xs text-blue-600 mt-2 font-medium">지도</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                  className="items-center py-3 px-4"
-                  onPress={() => navigateToScreen('LinkPage')}
-              >
-                <View className="bg-gray-50 p-2 rounded-full">
-                  <Users size={24} color="#6b7280" />
-                </View>
-                <Text className="text-xs text-gray-600 mt-2">이용자</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                  className="items-center py-3 px-4"
-                  onPress={() => navigateToScreen('LogPage')}
-              >
-                <View className="bg-gray-50 p-2 rounded-full">
-                  <Bell size={24} color="#6b7280" />
-                </View>
-                <Text className="text-xs text-gray-600 mt-2">기록</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                  className="items-center py-3 px-4"
-                  onPress={() => navigateToScreen('MyPage')}
-              >
-                <View className="bg-gray-50 p-2 rounded-full">
-                  <User size={24} color="#6b7280" />
-                </View>
-                <Text className="text-xs text-gray-600 mt-2">마이페이지</Text>
-              </TouchableOpacity>
+            <View className="bg-gray-50 p-2 rounded-full">
+              <Users size={24} color="#6b7280" />
             </View>
-          </View>
+            <Text className="text-xs text-gray-600 mt-2">이용자</Text>
+          </TouchableOpacity>
+        )}
 
-          
-        </SafeAreaView>
-    );
-  }
+        <TouchableOpacity
+          className="items-center py-3 px-4"
+          onPress={() => navigateToScreen('LogPage')}
+        >
+          <View className="bg-gray-50 p-2 rounded-full">
+            <Bell size={24} color="#6b7280" />
+          </View>
+          <Text className="text-xs text-gray-600 mt-2">기록</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          className="items-center py-3 px-4"
+          onPress={() => navigateToScreen('MyPage')}
+        >
+          <View className="bg-gray-50 p-2 rounded-full">
+            <User size={24} color="#6b7280" />
+          </View>
+          <Text className="text-xs text-gray-600 mt-2">마이페이지</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </SafeAreaView>
+  );
 };
 
 export default MainPage;
