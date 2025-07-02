@@ -81,7 +81,7 @@ const LoginPage: React.FC<LoginPageProps> = () => {
                 <Text className="text-sm font-medium text-gray-700">전화번호</Text>
                 <TextInput
                   className="w-full px-3 py-3 border border-gray-300 rounded-md bg-white text-gray-900"
-                  placeholder="ex) 01012345678"
+                  placeholder="숫자만 입력해주세요"
                   value={number}
                   onChangeText={setNumber}
                   autoCapitalize="none"
@@ -94,7 +94,7 @@ const LoginPage: React.FC<LoginPageProps> = () => {
                 <Text className="text-sm font-medium text-gray-700">비밀번호</Text>
                 <TextInput
                   className="w-full px-3 py-3 border border-gray-300 rounded-md bg-white text-gray-900"
-                  placeholder="••••••"
+                  placeholder="비밀번호를 입력해주세요"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
