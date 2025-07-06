@@ -1,29 +1,15 @@
 import BottomNav from '@/app/src/components/BottomNav';
+import Global from '@/constants/Global';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import * as Location from 'expo-location';
-import {
-  Locate,
-  Navigation,
-  User
-} from 'lucide-react-native';
+import { Locate, Navigation, User } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  Alert,
-  AppState,
-  BackHandler,
-  SafeAreaView,
-  StatusBar,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Alert, AppState, BackHandler, SafeAreaView, StatusBar, Text, TouchableOpacity, View, } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-
-import Global from '@/constants/Global';
 import { customMapStyle } from '../styles/MapPageStyles';
 
-// Interface
+// Types
 interface RealTimeLocation {
   latitude: number;
   longitude: number;
@@ -33,106 +19,87 @@ interface RealTimeLocation {
 interface LocationTrackingState {
   isTracking: boolean;
   currentLocation: RealTimeLocation | null;
-  locationHistory: RealTimeLocation[];
   error: string | null;
-  isLoading: boolean;
 }
 
 type UserRole = 'user' | 'supporter' | null;
 
-//  Custom Hook: 재사용 함수
+// 위치 권한 요청 
+const requestLocationPermission = async () => {
+  const { status } = await Location.requestForegroundPermissionsAsync();
+  return status === 'granted';
+};
+
+// LocationObjectCoords → RealTimeLocation 변환
+const getLocationObject = (coords: Location.LocationObjectCoords, timestamp: number): RealTimeLocation => ({
+  latitude: coords.latitude,
+  longitude: coords.longitude,
+  timestamp,
+});
+
+// Custom Hook
 const useLocationTracking = (moveToLocation: (location: RealTimeLocation) => void) => {
   const locationSubscription = useRef<Location.LocationSubscription | null>(null);
   const [locationState, setLocationState] = useState<LocationTrackingState>({
     isTracking: false,
     currentLocation: null,
-    locationHistory: [],
     error: null,
-    isLoading: false,
   });
-
-  const startTracking = useCallback(async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setLocationState(prev => ({ ...prev, error: '위치 권한이 필요합니다.' }));
-        return;
-      }
-
-      locationSubscription.current?.remove();
-
-      const subscription = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.High,
-          timeInterval: 5000,
-        },
-        (newLocation) => {
-          const realTimeLocation: RealTimeLocation = {
-            latitude: newLocation.coords.latitude,
-            longitude: newLocation.coords.longitude,
-            timestamp: newLocation.timestamp,
-          };
-
-          setLocationState(prev => ({
-            ...prev,
-            currentLocation: realTimeLocation,
-            locationHistory: [...prev.locationHistory.slice(-19), realTimeLocation],
-            isTracking: true,
-          }));
-
-          moveToLocation(realTimeLocation);
-        }
-      );
-
-      locationSubscription.current = subscription;
-    } catch (error) {
-      console.error('위치 추적 오류:', error);
-      setLocationState(prev => ({
-        ...prev,
-        error: '실시간 위치 추적 중 오류가 발생했습니다.',
-      }));
-    }
-  }, [moveToLocation]);
-
-  const stopTracking = useCallback(() => {
+  
+  // 	기존 위치 추적 구독 제거
+  const clearSubscription = () => {
     locationSubscription.current?.remove();
     locationSubscription.current = null;
-    setLocationState(prev => ({ ...prev, isTracking: false, isLoading: false }));
+  };
+  
+  // 실시간 위치 추적 시작, 상태 갱신, 지도 이동
+  const startTracking = useCallback(async () => {
+    if (!(await requestLocationPermission())) {
+      setLocationState(prev => ({ ...prev, error: '위치 권한이 필요합니다.' }));
+      return;
+    }
+
+    clearSubscription();
+
+    const subscription = await Location.watchPositionAsync(
+      { accuracy: Location.Accuracy.High, timeInterval: 5000 },
+      (newLocation) => {
+        const realTimeLocation = getLocationObject(newLocation.coords, newLocation.timestamp);
+        setLocationState(prev => ({
+          ...prev,
+          currentLocation: realTimeLocation,
+          isTracking: true,
+        }));
+        moveToLocation(realTimeLocation);
+      }
+    );
+
+    locationSubscription.current = subscription;
+  }, [moveToLocation]);
+
+
+  // 위치 추적 중지
+  const stopTracking = useCallback(() => {
+    clearSubscription();
+    setLocationState(prev => ({ ...prev, isTracking: false }));
     Alert.alert('추적 중지', '실시간 위치 추적이 중지되었습니다.');
   }, []);
 
+  // 초기 위치 요청 + startTracking 시작
   const initializeLocation = useCallback(async () => {
+    if (!(await requestLocationPermission())) {
+      setLocationState(prev => ({ ...prev, error: '위치 접근 권한이 필요합니다.' }));
+      return;
+    }
+
     try {
-      setLocationState(prev => ({ ...prev, isLoading: true }));
-
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setLocationState(prev => ({
-          ...prev,
-          error: '위치 접근 권한이 필요합니다.',
-          isLoading: false,
-        }));
-        return;
-      }
-
-      const initial = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-
-      const location: RealTimeLocation = {
-        latitude: initial.coords.latitude,
-        longitude: initial.coords.longitude,
-        timestamp: initial.timestamp,
-      };
-
+      const initial = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const location = getLocationObject(initial.coords, initial.timestamp);
       setLocationState(prev => ({
         ...prev,
         currentLocation: location,
-        locationHistory: [location],
         error: null,
-        isLoading: false,
       }));
-
       moveToLocation(location);
       await startTracking();
     } catch (error) {
@@ -140,68 +107,54 @@ const useLocationTracking = (moveToLocation: (location: RealTimeLocation) => voi
       setLocationState(prev => ({
         ...prev,
         error: 'GPS가 활성화되어 있는지 확인해주세요.',
-        isLoading: false,
       }));
     }
   }, [moveToLocation, startTracking]);
 
+  // 백그라운드 전환 시, 위치 추적 기능 중지
   useEffect(() => {
-    const handleAppStateChange = (state: string) => {
-      if (state === 'background' && locationState.isTracking) {
-        stopTracking();
-      }
-    };
-
-    const sub = AppState.addEventListener('change', handleAppStateChange);
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'background' && locationState.isTracking) stopTracking();
+    });
     return () => sub.remove();
   }, [locationState.isTracking, stopTracking]);
 
-  useEffect(() => {
-    return () => {
-      locationSubscription.current?.remove();
-      locationSubscription.current = null;
-    };
-  }, []);
+  // 시작 시, 위치 구독 초기화
+  useEffect(() => clearSubscription, []);
 
   return { locationState, startTracking, stopTracking, initializeLocation };
 };
 
-// MapPage 
 const MapPage: React.FC = () => {
   const navigation = useNavigation();
   const mapRef = useRef<MapView>(null);
   const [userRole, setUserRole] = useState<UserRole>(null);
 
-  useEffect(() => {
-    console.log('현재 페이지 렌더링됨: MapPage');
-  }, []);
-
+  // 지도를 지정 위치로 이동
   const moveToLocation = useCallback((location: RealTimeLocation) => {
     mapRef.current?.animateToRegion({
       latitude: location.latitude,
       longitude: location.longitude,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    }, 1000); // 1초
+      latitudeDelta: 0.01, // 지도 시아
+      longitudeDelta: 0.01, // 지도 시아
+    }, 1000);
   }, []);
 
   const { locationState, initializeLocation } = useLocationTracking(moveToLocation);
 
+  // Global.USER_ROLE 가져오는 기능
   useEffect(() => {
     initializeLocation();
-  }, [initializeLocation]);
-
-  useEffect(() => {
     const role = Global.USER_ROLE;
     setUserRole(role === 'user' || role === 'supporter' ? role : null);
-  }, []);
+  }, [initializeLocation]);
 
+  // 사용자 위치 서버에 전송하는 기능
   useEffect(() => {
     const sendLocation = async () => {
       if (!locationState.currentLocation) return;
-
       try {
-        await axios.post(`${Global.URL}/user/getUserLocation`, {
+        await axios.post(`${Global.URL}/user/saveUserLocation`, {
           number: Global.NUMBER,
           latitude: locationState.currentLocation.latitude,
           longitude: locationState.currentLocation.longitude,
@@ -212,22 +165,18 @@ const MapPage: React.FC = () => {
         console.error('위치 전송 오류:', err);
       }
     };
-
     const intervalId = setInterval(sendLocation, 5000);
     return () => clearInterval(intervalId);
   }, [locationState.currentLocation]);
 
+  // 내 현위치로 이동하는 기능
   const moveToMyLocation = useCallback(async () => {
     if (locationState.currentLocation) {
       moveToLocation(locationState.currentLocation);
     } else {
       try {
         const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-        const location: RealTimeLocation = {
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-          timestamp: pos.timestamp,
-        };
+        const location = getLocationObject(pos.coords, pos.timestamp);
         moveToLocation(location);
       } catch (err) {
         console.error('현재 위치 오류:', err);
@@ -236,19 +185,19 @@ const MapPage: React.FC = () => {
     }
   }, [locationState.currentLocation, moveToLocation]);
 
+  // 뒤로가기 클릭 시, 역할 선택 페이지로 이동
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
         navigation.navigate('SelectRole' as never);
-        return true; 
+        return true;
       };
-
-      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-
-      return () => subscription.remove();
+      const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => sub.remove();
     }, [navigation])
   );
 
+  // 위치 정도 가져오는 동안 로딩창 표현
   if (!locationState.currentLocation) {
     return (
       <SafeAreaView className="flex-1 justify-center items-center bg-gray-50">
@@ -268,7 +217,6 @@ const MapPage: React.FC = () => {
     <SafeAreaView className="flex-1 bg-gray-50">
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-      {/* 상단 정보 영역 */}
       <View className="bg-white shadow-lg p-6 items-center">
         <Text className="text-2xl font-bold text-gray-900 mb-1">사용자 위치</Text>
         <Text className="text-sm text-gray-500">
@@ -283,7 +231,6 @@ const MapPage: React.FC = () => {
         )}
       </View>
 
-      {/* 지도 */}
       <View className="flex-1 relative">
         <MapView
           ref={mapRef}
@@ -321,7 +268,6 @@ const MapPage: React.FC = () => {
           </Marker>
         </MapView>
 
-        {/* 내 위치 이동 버튼 */}
         <TouchableOpacity
           className="absolute bottom-20 right-4 bg-white p-4 rounded-full shadow-lg border border-gray-200"
           onPress={moveToMyLocation}
