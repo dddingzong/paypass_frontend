@@ -1,4 +1,5 @@
 // UserMapPage.tsx
+import useCareGeofence from '@/app/hooks/userCareGeofence';
 import BottomNav from '@/app/src/components/BottomNav';
 import Global from '@/constants/Global';
 import axios from 'axios';
@@ -6,12 +7,14 @@ import * as Location from 'expo-location';
 import { Locate, Navigation } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, SafeAreaView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Circle, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { customMapStyle } from '../styles/MapPageStyles';
 
 const UserMapPage: React.FC = () => {
   const mapRef = useRef<MapView>(null);
   const [currentLocation, setCurrentLocation] = useState<Location.LocationObjectCoords | null>(null);
+
+  const careGeofences = useCareGeofence();
 
   const moveToLocation = useCallback((coords: Location.LocationObjectCoords) => {
     mapRef.current?.animateToRegion({
@@ -99,6 +102,15 @@ const UserMapPage: React.FC = () => {
           initialRegion={region}
           customMapStyle={customMapStyle}
         >
+          {careGeofences.map((fence) => (
+            <Circle
+            key={fence.id}
+            center={fence.center}
+            radius={fence.radius}
+            strokeColor={fence.strokeColor}
+            fillColor={fence.fillColor}
+            />
+          ))}
           <Marker
             coordinate={region}
             title="내 위치"

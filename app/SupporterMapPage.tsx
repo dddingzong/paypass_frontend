@@ -1,11 +1,12 @@
 // SupporterMapPage.tsx
+import useCareGeofence from '@/app/hooks/userCareGeofence';
 import BottomNav from '@/app/src/components/BottomNav';
 import Global from '@/constants/Global';
 import axios from 'axios';
 import { Locate, User } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, SafeAreaView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Circle, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { customMapStyle } from '../styles/MapPageStyles';
 
 interface RealTimeLocation {
@@ -17,6 +18,8 @@ interface RealTimeLocation {
 const SupporterMapPage: React.FC = () => {
   const mapRef = useRef<MapView>(null);
   const [targetLocation, setTargetLocation] = useState<RealTimeLocation | null>(null);
+
+  const careGeofences = useCareGeofence();
 
   const fetchTargetLocation = useCallback(async () => {
     try {
@@ -92,6 +95,15 @@ const SupporterMapPage: React.FC = () => {
           initialRegion={region}
           customMapStyle={customMapStyle}
         >
+          {careGeofences.map((fence) => (
+            <Circle
+              key={fence.id}
+              center={fence.center}
+              radius={fence.radius}
+              strokeColor={fence.strokeColor}
+              fillColor={fence.fillColor}
+            />
+          ))}
           <Marker
             coordinate={region}
             title="이용자 위치"
