@@ -14,7 +14,7 @@ const UserMapPage: React.FC = () => {
   const mapRef = useRef<MapView>(null);
   const [currentLocation, setCurrentLocation] = useState<Location.LocationObjectCoords | null>(null);
 
-  const careGeofences = useCareGeofence();
+  const careGeofences = useCareGeofence(currentLocation ?? undefined);
 
   const moveToLocation = useCallback((coords: Location.LocationObjectCoords) => {
     mapRef.current?.animateToRegion({
