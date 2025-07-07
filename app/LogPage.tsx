@@ -16,7 +16,7 @@ import {
 
 // 라우트 파라미터 타입 정의
 type RootStackParamList = {
-  MapPage: undefined;
+  MapRouterPage: undefined;
   LinkPage: undefined;
   LogPage: undefined;
   MyPage: undefined;

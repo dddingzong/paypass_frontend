@@ -45,7 +45,7 @@ export default function SelectRolePage() {
         console.log('선택한 역할:', selectedRole);
         Global.USER_ROLE = selectedRole;
         if (Global.USER_ROLE === 'user') {
-          router.push(`/MapPage`);
+          router.push(`/MapRouterPage`);
         } 
         if (Global.USER_ROLE === 'supporter') {
           router.push(`/LinkPage`);
