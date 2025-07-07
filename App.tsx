@@ -3,7 +3,7 @@ import LogPage from '@/app/LogPage';
 import MapRouterPage from '@/app/MapRouterPage';
 import MyPage from '@/app/MyPage';
 import SelectRole from '@/app/SelectRole';
-import index from '@/app/index'; // 경로는 실제 파일 위치에 맞게 조정하세요
+import index from '@/app/index';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';

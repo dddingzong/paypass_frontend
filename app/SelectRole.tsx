@@ -90,7 +90,7 @@ export default function SelectRolePage() {
                 >
                   <View className="flex-row items-center space-x-4">
                     <View
-                      className={`h-12 w-12 rounded-full items-center justify-center ${
+                      className={`h-12 w-12 rounded-full flex items-center justify-center ${
                         isSelected ? `bg-${role.selectedColor}-100` : 'bg-gray-100'
                       }`}
                     >

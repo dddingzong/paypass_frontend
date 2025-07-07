@@ -1,6 +1,6 @@
 import BottomNav from '@/app/src/components/BottomNav';
 import Global from '@/constants/Global';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { CommonActions, useFocusEffect, useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import {
   ChevronRight,
@@ -114,23 +114,27 @@ const MyPage: React.FC = () => {
 
   const handleLogout = () => {
     Alert.alert('로그아웃', '로그아웃 하시겠습니까?', [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '로그아웃',
-          onPress: async () => {
-            try {
-                Global.NUMBER = "";
-                Global.TARGET_NUMBER = "";
-                Global.USER_ROLE = "";
-          
-              navigation.navigate('index' as never);
-            } catch (error) {
-              console.error('로그아웃 실패:', error);
-            }
-          },
+      { text: '취소', style: 'cancel' },
+      {
+        text: '로그아웃',
+        onPress: async () => {
+          try {
+            Global.NUMBER = "";
+            Global.TARGET_NUMBER = "";
+            Global.USER_ROLE = "";
+
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'index' }],
+              })
+            );
+          } catch (error) {
+            console.error('로그아웃 실패:', error);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = "" }) => (
