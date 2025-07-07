@@ -17,7 +17,7 @@ type NavigationProp = StackNavigationProp<RootStackParamList>;
 type ScreenName = keyof RootStackParamList;
 
 interface BottomNavProps {
-  current: ScreenName;
+  current: string;
 }
 
 const BottomNav: React.FC<BottomNavProps> = ({ current }) => {
