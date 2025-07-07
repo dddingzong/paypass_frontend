@@ -15,8 +15,24 @@ export interface CareGeofence {
   label?: string;
 }
 
-export default function useCareGeofence() {
+function getDistance(a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }) {
+  const toRad = (value: number) => (value * Math.PI) / 180;
+  const R = 6371000; // Earth radius in meters
+  const dLat = toRad(b.latitude - a.latitude);
+  const dLon = toRad(b.longitude - a.longitude);
+  const lat1 = toRad(a.latitude);
+  const lat2 = toRad(b.latitude);
+
+  const aVal =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+  const c = 2 * Math.atan2(Math.sqrt(aVal), Math.sqrt(1 - aVal));
+  return R * c;
+}
+
+export default function useCareGeofence(currentLocation?: { latitude: number; longitude: number }) {
   const [careGeofences, setCareGeofences] = useState<CareGeofence[]>([]);
+  const [lastEntry, setLastEntry] = useState<{ name: string; time: Date } | null>(null);
 
   useEffect(() => {
     const shouldFetch =
@@ -39,7 +55,7 @@ export default function useCareGeofence() {
         return;
       }
 
-      const {homeLatitude,homeLongitude,centerLatitude,centerLongitude,} = response.data;
+      const { homeLatitude, homeLongitude, centerLatitude, centerLongitude } = response.data;
 
       const newGeofences: CareGeofence[] = [
         {
@@ -65,6 +81,52 @@ export default function useCareGeofence() {
 
     fetchGeofence();
   }, []);
+
+  useEffect(() => {
+    if (!currentLocation || careGeofences.length === 0) return;
+
+    const now = new Date();
+
+    for (const fence of careGeofences) {
+      const dist = getDistance(currentLocation, fence.center);
+      if (dist <= fence.radius) {
+        if (!lastEntry) {
+          setLastEntry({ name: fence.name, time: now });
+          return;
+        }
+
+        if (lastEntry.name === fence.name) {
+          setLastEntry({ name: fence.name, time: now });
+        } else {
+          const diffMinutes = (now.getTime() - lastEntry.time.getTime()) / 1000 / 60;
+
+          if (diffMinutes > 60) {
+            setLastEntry({ name: fence.name, time: now });
+          } else {
+            const payload = [
+              { name: lastEntry.name, time: lastEntry.time },
+              { name: fence.name, time: now },
+            ];
+
+            axios
+              .post(`${Global.URL}/geofence/careGeofence/algorithm`, payload, {
+                headers: { 'Content-Type': 'application/json' },
+              })
+              .then(() => {
+                console.log('지오펜스 이동 기록 전송 완료');
+              })
+              .catch((err) => {
+                console.warn('지오펜스 이동 전송 실패:', err);
+              });
+
+            setLastEntry(null);
+          }
+        }
+
+        break;
+      }
+    }
+  }, [currentLocation, careGeofences]);
 
   return careGeofences;
 }
