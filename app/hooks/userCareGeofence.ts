@@ -103,8 +103,8 @@ export default function useCareGeofence(currentLocation?: { latitude: number; lo
               const payload = {
                 number: Global.NUMBER,
                 history: [
-                  { name: lastEntry.name, time: lastEntry.time },
-                  { name: fence.name, time: now }
+                  { name: lastEntry.name, time: lastEntry.time.toISOString() },
+                  { name: fence.name, time: now.toISOString() },
                 ]
               };
 
@@ -112,8 +112,12 @@ export default function useCareGeofence(currentLocation?: { latitude: number; lo
                 .post(`${Global.URL}/geofence/careGeofence/algorithm`, payload, {
                   headers: { 'Content-Type': 'application/json' },
                 })
-                .then(() => console.log('지오펜스 이동 기록 전송 완료'))
-                .catch((err) => console.warn('지오펜스 이동 전송 실패:', err));
+                .then((res) => {
+                  console.log('서버 응답:', res.data);
+                })
+                .catch((err) => {
+                  console.warn('지오펜스 이동 전송 실패:', err);
+                });
 
               setLastEntry(null);
             } else {
