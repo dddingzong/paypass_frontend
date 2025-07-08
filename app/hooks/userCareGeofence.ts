@@ -17,7 +17,7 @@ export interface CareGeofence {
 
 function getDistance(a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }) {
   const toRad = (value: number) => (value * Math.PI) / 180;
-  const R = 6371000; // Earth radius in meters
+  const R = 6371000;
   const dLat = toRad(b.latitude - a.latitude);
   const dLon = toRad(b.longitude - a.longitude);
   const lat1 = toRad(a.latitude);
@@ -32,6 +32,7 @@ function getDistance(a: { latitude: number; longitude: number }, b: { latitude: 
 
 export default function useCareGeofence(currentLocation?: { latitude: number; longitude: number }) {
   const [careGeofences, setCareGeofences] = useState<CareGeofence[]>([]);
+  const [currentFence, setCurrentFence] = useState<string | null>(null);
   const [lastEntry, setLastEntry] = useState<{ name: string; time: Date } | null>(null);
 
   useEffect(() => {
@@ -44,11 +45,9 @@ export default function useCareGeofence(currentLocation?: { latitude: number; lo
     const number = Global.USER_ROLE === 'user' ? Global.NUMBER : Global.TARGET_NUMBER;
 
     const fetchGeofence = async () => {
-      const response = await axios.post(`${Global.URL}/geofence/getCareGeofence`, { number },
-        {
-          validateStatus: (status) => status === 200 || status === 404,
-        }
-      );
+      const response = await axios.post(`${Global.URL}/geofence/getCareGeofence`, { number }, {
+        validateStatus: (status) => status === 200 || status === 404,
+      });
 
       if (response.status === 404 || !response.data) {
         console.warn('지오펜스 없음 (404):', number);
@@ -86,45 +85,53 @@ export default function useCareGeofence(currentLocation?: { latitude: number; lo
     if (!currentLocation || careGeofences.length === 0) return;
 
     const now = new Date();
+    let isInside = false;
 
     for (const fence of careGeofences) {
       const dist = getDistance(currentLocation, fence.center);
       if (dist <= fence.radius) {
-        if (!lastEntry) {
+        isInside = true;
+
+        if (!currentFence) {
+          setCurrentFence(fence.name);
           setLastEntry({ name: fence.name, time: now });
-          return;
-        }
+        } else if (currentFence !== fence.name) {
+          if (lastEntry) {
+            const diffMinutes = (now.getTime() - lastEntry.time.getTime()) / 1000 / 60;
 
-        if (lastEntry.name === fence.name) {
-          setLastEntry({ name: fence.name, time: now });
-        } else {
-          const diffMinutes = (now.getTime() - lastEntry.time.getTime()) / 1000 / 60;
+            if (diffMinutes <= 60) {
+              const payload = {
+                number: Global.NUMBER,
+                history: [
+                  { name: lastEntry.name, time: lastEntry.time },
+                  { name: fence.name, time: now }
+                ]
+              };
 
-          if (diffMinutes > 60) {
-            setLastEntry({ name: fence.name, time: now });
-          } else {
-            const payload = [
-              { name: lastEntry.name, time: lastEntry.time },
-              { name: fence.name, time: now },
-            ];
+              axios
+                .post(`${Global.URL}/geofence/careGeofence/algorithm`, payload, {
+                  headers: { 'Content-Type': 'application/json' },
+                })
+                .then(() => console.log('지오펜스 이동 기록 전송 완료'))
+                .catch((err) => console.warn('지오펜스 이동 전송 실패:', err));
 
-            axios
-              .post(`${Global.URL}/geofence/careGeofence/algorithm`, payload, {
-                headers: { 'Content-Type': 'application/json' },
-              })
-              .then(() => {
-                console.log('지오펜스 이동 기록 전송 완료');
-              })
-              .catch((err) => {
-                console.warn('지오펜스 이동 전송 실패:', err);
-              });
-
-            setLastEntry(null);
+              setLastEntry(null);
+            } else {
+              setLastEntry({ name: fence.name, time: now });
+            }
           }
+
+          setCurrentFence(fence.name);
+        } else {
+          setLastEntry({ name: fence.name, time: now });
         }
 
         break;
       }
+    }
+
+    if (!isInside) {
+      setCurrentFence(null);
     }
   }, [currentLocation, careGeofences]);
 
