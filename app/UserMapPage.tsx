@@ -1,4 +1,3 @@
-// UserMapPage.tsx
 import useCareGeofence from '@/app/hooks/userCareGeofence';
 import BottomNav from '@/app/src/components/BottomNav';
 import Global from '@/constants/Global';
@@ -16,6 +15,7 @@ const UserMapPage: React.FC = () => {
 
   const careGeofences = useCareGeofence(currentLocation ?? undefined);
 
+  // 지도 이동
   const moveToLocation = useCallback((coords: Location.LocationObjectCoords) => {
     mapRef.current?.animateToRegion({
       latitude: coords.latitude,
@@ -25,7 +25,8 @@ const UserMapPage: React.FC = () => {
     }, 1000);
   }, []);
 
-  const initializeLocation = useCallback(async () => {
+  // 위치 권한 요청 및 현재 위치 설정
+  const requestAndSetCurrentLocation = useCallback(async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('오류', '위치 권한이 필요합니다.');
@@ -41,29 +42,35 @@ const UserMapPage: React.FC = () => {
     }
   }, [moveToLocation]);
 
-  useEffect(() => {
-    initializeLocation();
-  }, [initializeLocation]);
+  // 위치 서버 전송
+  const sendCurrentLocation = useCallback(async () => {
+    if (!currentLocation) return;
 
-  useEffect(() => {
-    const sendLocation = async () => {
-      if (!currentLocation) return;
-      try {
-        await axios.post(`${Global.URL}/user/saveUserLocation`, {
-          number: Global.NUMBER,
-          latitude: currentLocation.latitude,
-          longitude: currentLocation.longitude,
-        }, {
-          headers: { 'Content-Type': 'application/json' },
-        });
-      } catch (err) {
-        console.error('위치 전송 오류:', err);
-      }
-    };
-    const intervalId = setInterval(sendLocation, 5000);
-    return () => clearInterval(intervalId);
+    try {
+      await axios.post(`${Global.URL}/user/saveUserLocation`, {
+        number: Global.NUMBER,
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude,
+      }, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (err) {
+      console.error('위치 전송 오류:', err);
+    }
   }, [currentLocation]);
 
+  // 초기 위치 설정
+  useEffect(() => {
+    requestAndSetCurrentLocation();
+  }, [requestAndSetCurrentLocation]);
+
+  // 위치 주기적 전송
+  useEffect(() => {
+    const intervalId = setInterval(sendCurrentLocation, 5000);
+    return () => clearInterval(intervalId);
+  }, [sendCurrentLocation]);
+
+  // 내 위치 버튼
   const moveToMyLocation = useCallback(() => {
     if (currentLocation) {
       moveToLocation(currentLocation);
@@ -104,13 +111,14 @@ const UserMapPage: React.FC = () => {
         >
           {careGeofences.map((fence) => (
             <Circle
-            key={fence.id}
-            center={fence.center}
-            radius={fence.radius}
-            strokeColor={fence.strokeColor}
-            fillColor={fence.fillColor}
+              key={fence.id}
+              center={fence.center}
+              radius={fence.radius}
+              strokeColor={fence.strokeColor}
+              fillColor={fence.fillColor}
             />
           ))}
+
           <Marker
             coordinate={region}
             title="내 위치"
@@ -131,7 +139,13 @@ const UserMapPage: React.FC = () => {
         <TouchableOpacity
           className="absolute bottom-20 right-4 bg-white p-4 rounded-full shadow-lg border border-gray-200"
           onPress={moveToMyLocation}
-          style={{ elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8 }}
+          style={{
+            elevation: 8,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.15,
+            shadowRadius: 8,
+          }}
         >
           <Locate size={24} color="#2563eb" />
         </TouchableOpacity>
