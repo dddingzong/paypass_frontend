@@ -137,7 +137,7 @@ export default function useCareGeofence(currentLocation?: { latitude: number; lo
     if (!isInside) {
       setCurrentFence(null);
     }
-  }, [currentLocation, careGeofences]);
+  }, [currentLocation, careGeofences, currentFence, lastEntry]);
 
   return careGeofences;
 }

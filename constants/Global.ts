@@ -3,7 +3,7 @@ const Global = {
   NUMBER: "",
   TARGET_NUMBER: "",
   USER_ROLE: "",
-
+  PAYPASS_CENTERS: [],
 
   // type: 요양원, 복지센터, 주야간보호센터
   CARE_CENTERS: [
