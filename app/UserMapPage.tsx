@@ -1,21 +1,37 @@
+import usePaypassGeofenceEventSender from '@/app/hooks/paypassGeofenceEventSender';
 import useCareGeofence from '@/app/hooks/userCareGeofence';
 import BottomNav from '@/app/src/components/BottomNav';
 import Global from '@/constants/Global';
 import axios from 'axios';
 import * as Location from 'expo-location';
 import { Locate, Navigation } from 'lucide-react-native';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, SafeAreaView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Circle, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { customMapStyle } from '../styles/MapPageStyles';
+
+interface Station {
+  stationNumber: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+}
 
 const UserMapPage: React.FC = () => {
   const mapRef = useRef<MapView>(null);
   const [currentLocation, setCurrentLocation] = useState<Location.LocationObjectCoords | null>(null);
 
-  const careGeofences = useCareGeofence(currentLocation ?? undefined);
+  // 메모이제이션으로 디펜던시 안정화
+  const paypassCenters = useMemo(() => Global.PAYPASS_CENTERS as Station[], []);
+  const safeLocation = useMemo(() => {
+    if (currentLocation) return { latitude: currentLocation.latitude, longitude: currentLocation.longitude };
+    return undefined;
+  }, [currentLocation]);
 
-  // 지도 이동
+  // 지오펜스 훅
+  const careGeofences = useCareGeofence(safeLocation);
+  usePaypassGeofenceEventSender(safeLocation, paypassCenters);
+
   const moveToLocation = useCallback((coords: Location.LocationObjectCoords) => {
     mapRef.current?.animateToRegion({
       latitude: coords.latitude,
@@ -25,8 +41,7 @@ const UserMapPage: React.FC = () => {
     }, 1000);
   }, []);
 
-  // 위치 권한 요청 및 현재 위치 설정
-  const requestAndSetCurrentLocation = useCallback(async () => {
+  const initializeLocation = useCallback(async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('오류', '위치 권한이 필요합니다.');
@@ -37,40 +52,35 @@ const UserMapPage: React.FC = () => {
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       setCurrentLocation(pos.coords);
       moveToLocation(pos.coords);
-    } catch (err) {
+    } catch {
       Alert.alert('오류', '위치를 가져올 수 없습니다.');
     }
   }, [moveToLocation]);
 
-  // 위치 서버 전송
-  const sendCurrentLocation = useCallback(async () => {
-    if (!currentLocation) return;
+  useEffect(() => {
+    initializeLocation();
+  }, [initializeLocation]);
 
-    try {
-      await axios.post(`${Global.URL}/user/saveUserLocation`, {
-        number: Global.NUMBER,
-        latitude: currentLocation.latitude,
-        longitude: currentLocation.longitude,
-      }, {
-        headers: { 'Content-Type': 'application/json' },
-      });
-    } catch (err) {
-      console.error('위치 전송 오류:', err);
-    }
+  useEffect(() => {
+    const sendLocation = async () => {
+      if (!currentLocation) return;
+      try {
+        await axios.post(`${Global.URL}/user/saveUserLocation`, {
+          number: Global.NUMBER,
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude,
+        }, {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      } catch (err) {
+        console.error('위치 전송 오류:', err);
+      }
+    };
+
+    const intervalId = setInterval(sendLocation, 5000);
+    return () => clearInterval(intervalId);
   }, [currentLocation]);
 
-  // 초기 위치 설정
-  useEffect(() => {
-    requestAndSetCurrentLocation();
-  }, [requestAndSetCurrentLocation]);
-
-  // 위치 주기적 전송
-  useEffect(() => {
-    const intervalId = setInterval(sendCurrentLocation, 5000);
-    return () => clearInterval(intervalId);
-  }, [sendCurrentLocation]);
-
-  // 내 위치 버튼
   const moveToMyLocation = useCallback(() => {
     if (currentLocation) {
       moveToLocation(currentLocation);
@@ -109,16 +119,7 @@ const UserMapPage: React.FC = () => {
           initialRegion={region}
           customMapStyle={customMapStyle}
         >
-          {careGeofences.map((fence) => (
-            <Circle
-              key={fence.id}
-              center={fence.center}
-              radius={fence.radius}
-              strokeColor={fence.strokeColor}
-              fillColor={fence.fillColor}
-            />
-          ))}
-
+          {/* 사용자 위치 */}
           <Marker
             coordinate={region}
             title="내 위치"
@@ -134,6 +135,31 @@ const UserMapPage: React.FC = () => {
               </View>
             </View>
           </Marker>
+
+          {/* care 지오펜스 */}
+          {careGeofences.map((fence) => (
+            <Circle
+              key={fence.id}
+              center={fence.center}
+              radius={fence.radius}
+              strokeColor={fence.strokeColor}
+              fillColor={fence.fillColor}
+            />
+          ))}
+
+          {/* paypass 지오펜스 */}
+          {paypassCenters.map((station) => (
+            <Circle
+              key={station.stationNumber}
+              center={{
+                latitude: Number(station.latitude),
+                longitude: Number(station.longitude),
+              }}
+              radius={70}
+              strokeColor="rgba(59, 130, 246, 1)"
+              fillColor="rgba(59, 130, 246, 0.2)"
+            />
+          ))}
         </MapView>
 
         <TouchableOpacity
