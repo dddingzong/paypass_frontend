@@ -7,7 +7,7 @@ import * as Location from 'expo-location';
 import { Locate, Navigation } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, SafeAreaView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
-import MapView, { Circle, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Circle, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { customMapStyle } from '../styles/MapPageStyles';
 
 interface Station {
@@ -20,17 +20,17 @@ interface Station {
 const UserMapPage: React.FC = () => {
   const mapRef = useRef<MapView>(null);
   const [currentLocation, setCurrentLocation] = useState<Location.LocationObjectCoords | null>(null);
+  const [visibleRegion, setVisibleRegion] = useState<Region | undefined>(undefined);
 
-  // 메모이제이션으로 디펜던시 안정화
   const paypassCenters = useMemo(() => Global.PAYPASS_CENTERS as Station[], []);
   const safeLocation = useMemo(() => {
     if (currentLocation) return { latitude: currentLocation.latitude, longitude: currentLocation.longitude };
     return undefined;
   }, [currentLocation]);
 
-  // 지오펜스 훅
+
   const careGeofences = useCareGeofence(safeLocation);
-  usePaypassGeofenceEventSender(safeLocation, paypassCenters);
+  usePaypassGeofenceEventSender(safeLocation, paypassCenters, visibleRegion);
 
   const moveToLocation = useCallback((coords: Location.LocationObjectCoords) => {
     mapRef.current?.animateToRegion({
@@ -102,6 +102,19 @@ const UserMapPage: React.FC = () => {
     longitudeDelta: 0.01,
   };
 
+  const isInVisibleRegion = (station: Station) => {
+    if (!visibleRegion) return false;
+    const latMin = visibleRegion.latitude - visibleRegion.latitudeDelta / 2;
+    const latMax = visibleRegion.latitude + visibleRegion.latitudeDelta / 2;
+    const lngMin = visibleRegion.longitude - visibleRegion.longitudeDelta / 2;
+    const lngMax = visibleRegion.longitude + visibleRegion.longitudeDelta / 2;
+
+    return (
+      station.latitude >= latMin && station.latitude <= latMax &&
+      station.longitude >= lngMin && station.longitude <= lngMax
+    );
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
@@ -118,8 +131,8 @@ const UserMapPage: React.FC = () => {
           style={{ flex: 1 }}
           initialRegion={region}
           customMapStyle={customMapStyle}
+          onRegionChangeComplete={(region) => setVisibleRegion(region)}
         >
-          {/* 사용자 위치 */}
           <Marker
             coordinate={region}
             title="내 위치"
@@ -136,7 +149,6 @@ const UserMapPage: React.FC = () => {
             </View>
           </Marker>
 
-          {/* care 지오펜스 */}
           {careGeofences.map((fence) => (
             <Circle
               key={fence.id}
@@ -147,8 +159,7 @@ const UserMapPage: React.FC = () => {
             />
           ))}
 
-          {/* paypass 지오펜스 */}
-          {paypassCenters.map((station) => (
+          {paypassCenters.filter(isInVisibleRegion).map((station) => (
             <Circle
               key={station.stationNumber}
               center={{
