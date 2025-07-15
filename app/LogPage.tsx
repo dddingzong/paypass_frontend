@@ -5,28 +5,8 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import axios from 'axios';
 import { Bell, Clock, MapPin } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  BackHandler,
-  FlatList,
-  SafeAreaView,
-  StatusBar,
-  Text,
-  View
-} from 'react-native';
+import { BackHandler, FlatList, SafeAreaView, StatusBar, Text, View } from 'react-native';
 
-// 라우트 파라미터 타입 정의
-type RootStackParamList = {
-  MapPage: undefined;
-  LinkPage: undefined;
-  LogPage: undefined;
-  MyPage: undefined;
-  SelectRole: undefined;
-};
-
-// navigation 타입 명시
-type NavigationProp = StackNavigationProp<RootStackParamList, 'LogPage'>;
-
-// 알림 타입
 interface Notification {
   number: string;
   name: string;
@@ -36,12 +16,22 @@ interface Notification {
   arrivalLocation: string;
 }
 
-const formatDateTime = (datetime: string): string =>
-  datetime.replace('T', ' ');
+type RootStackParamList = {
+  MapRouterPage: undefined;
+  LinkPage: undefined;
+  LogPage: undefined;
+  MyPage: undefined;
+  SelectRole: undefined;
+};
+
+type NavigationProp = StackNavigationProp<RootStackParamList, 'LogPage'>;
+
+const formatDateTime = (datetime: string): string => datetime.replace('T', ' ');
 
 const LogPage: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [requireSelection, setRequireSelection] = useState(false);
 
   useEffect(() => {
     console.log('현재 페이지 렌더링됨: LogPage');
@@ -49,9 +39,16 @@ const LogPage: React.FC = () => {
 
   useEffect(() => {
     const fetchNotifications = async () => {
+      if (Global.USER_ROLE === 'supporter' && !Global.TARGET_NUMBER) {
+        setRequireSelection(true);
+        return;
+      }
+
+      let numberToRequest = Global.USER_ROLE === 'supporter' ? Global.TARGET_NUMBER : Global.NUMBER;
+
       try {
         const response = await axios.post(`${Global.URL}/log/getLogList`, {
-          number: Global.NUMBER,
+          number: numberToRequest,
         });
         setNotifications(response.data);
       } catch (error) {
@@ -66,11 +63,10 @@ const LogPage: React.FC = () => {
     useCallback(() => {
       const onBackPress = () => {
         navigation.navigate('SelectRole' as never);
-        return true; // 뒤로가기 기본 동작 차단
+        return true;
       };
 
       const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-
       return () => subscription.remove();
     }, [navigation])
   );
@@ -114,27 +110,30 @@ const LogPage: React.FC = () => {
         <View className="max-w-2xl mx-auto w-full">
           <Text className="text-2xl font-bold text-gray-900 mb-6">이동 기록</Text>
 
-          <FlatList
-            data={notifications}
-            renderItem={renderNotificationCard}
-            keyExtractor={(item, index) => index.toString()}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 100 }}
-            ListEmptyComponent={
-              <View className="items-center justify-center py-12">
-                <Bell size={48} color="#9ca3af" />
-                <Text className="text-gray-500 text-lg mt-4">기록이 없습니다</Text>
-              </View>
-            }
-          />
+          {requireSelection ? (
+            <View className="items-center justify-center py-12">
+              <Text className="text-base text-gray-800">이용자를 선택해주세요.</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={notifications}
+              renderItem={renderNotificationCard}
+              keyExtractor={(_, index) => index.toString()}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 100 }}
+              ListEmptyComponent={
+                <View className="items-center justify-center py-12">
+                  <Bell size={48} color="#9ca3af" />
+                  <Text className="text-gray-500 text-lg mt-4">기록이 없습니다</Text>
+                </View>
+              }
+            />
+          )}
         </View>
       </View>
-
-      {/* 하단 네비게이션 */}
       <BottomNav current="LogPage" />
     </SafeAreaView>
   );
-  
 };
 
 export default LogPage;

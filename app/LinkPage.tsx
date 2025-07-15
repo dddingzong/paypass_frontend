@@ -32,7 +32,7 @@ interface User {
 }
 
 type RootStackParamList = {
-  MapPage: undefined;
+  MapRouterPage: undefined;
   LinkPage: undefined;
   LogPage: undefined;
   MyPage: undefined;
@@ -44,7 +44,7 @@ const mapToUser = (data: any): User => ({
   number: data.userNumber,
   homeAddress: data.homeAddress,
   relation: data.relation,
-  status: data.status,
+  status: data.userNumber === Global.TARGET_NUMBER ? 'active' : data.status,
 });
 
 const isValidUserCode = (code: string) => /^[0-9a-zA-Z]{6}$/.test(code);
@@ -68,7 +68,6 @@ const LinkPage: React.FC = () => {
   useEffect(() => {
     console.log('현재 페이지 렌더링됨: LinkPage');
   }, []);
-
 
   // 뒤로가기 눌렀을 때 SelectRole로 이동
   useEffect(() => {
@@ -112,7 +111,7 @@ const LinkPage: React.FC = () => {
   const handleUserClick = (userNumber: string) => {
     Global.TARGET_NUMBER = userNumber;
     console.info(`${Global.NUMBER} 사용자가 ${Global.TARGET_NUMBER}를 이용자로 선택하셨습니다.`);
-    navigation.navigate('MapPage');
+    navigation.navigate('MapRouterPage');
   };
 
   const handleRemoveUser = (userNumber: string) => {
@@ -190,7 +189,7 @@ const LinkPage: React.FC = () => {
                   <Text className={`text-xs ${statusStyle.text}`}>
                     {user.status === 'active' ? '활성' : '비활성'}
                   </Text>
-                </View>
+                  </View>
               </View>
               <Text className="text-sm text-gray-600">{user.relation}</Text>
             </View>
@@ -286,7 +285,6 @@ const LinkPage: React.FC = () => {
         transparent
         animationType="slide"
         onRequestClose={() => {
-          // 모달 닫을 때도 SelectRole로 이동
           setIsAddUserDialogOpen(false);
           navigation.navigate('SelectRole');
         }}

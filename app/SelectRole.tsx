@@ -45,7 +45,7 @@ export default function SelectRolePage() {
         console.log('선택한 역할:', selectedRole);
         Global.USER_ROLE = selectedRole;
         if (Global.USER_ROLE === 'user') {
-          router.push(`/MapPage`);
+          router.push(`/MapRouterPage`);
         } 
         if (Global.USER_ROLE === 'supporter') {
           router.push(`/LinkPage`);
@@ -90,7 +90,7 @@ export default function SelectRolePage() {
                 >
                   <View className="flex-row items-center space-x-4">
                     <View
-                      className={`h-12 w-12 rounded-full items-center justify-center ${
+                      className={`h-12 w-12 rounded-full flex items-center justify-center ${
                         isSelected ? `bg-${role.selectedColor}-100` : 'bg-gray-100'
                       }`}
                     >

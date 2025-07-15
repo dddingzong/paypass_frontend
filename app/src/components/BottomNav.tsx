@@ -5,7 +5,7 @@ import { Bell, MapPin, User, Users } from 'lucide-react-native';
 import { Text, TouchableOpacity, View } from 'react-native';
 
 type RootStackParamList = {
-  MapPage: undefined;
+  MapRouterPage: undefined;
   LogPage: undefined;
   MyPage: undefined;
   LinkPage: undefined;
@@ -17,20 +17,20 @@ type NavigationProp = StackNavigationProp<RootStackParamList>;
 type ScreenName = keyof RootStackParamList;
 
 interface BottomNavProps {
-  current: ScreenName;
+  current: string;
 }
 
 const BottomNav: React.FC<BottomNavProps> = ({ current }) => {
   const navigation = useNavigation<NavigationProp>();
 
   const userTabs: { screen: ScreenName; icon: React.FC<any>; label: string }[] = [
-    { screen: 'MapPage', icon: MapPin, label: '지도' },
+    { screen: 'MapRouterPage', icon: MapPin, label: '지도' },
     { screen: 'LogPage', icon: Bell, label: '기록' },
     { screen: 'MyPage', icon: User, label: '마이페이지' },
   ];
 
   const supporterTabs: { screen: ScreenName; icon: React.FC<any>; label: string }[] = [
-    { screen: 'MapPage', icon: MapPin, label: '지도' },
+    { screen: 'MapRouterPage', icon: MapPin, label: '지도' },
     { screen: 'LinkPage', icon: Users, label: '이용자' },
     { screen: 'LogPage', icon: Bell, label: '기록' },
     { screen: 'MyPage', icon: User, label: '마이페이지' },

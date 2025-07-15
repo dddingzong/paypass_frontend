@@ -1,3 +1,4 @@
+import useAppInitializer from '@/app/hooks/useAppInitializer';
 import Global from '@/constants/Global';
 import { useNavigation } from '@react-navigation/native'; // 페이지간 이동 담당
 import axios from 'axios';
@@ -24,6 +25,8 @@ const LoginPage: React.FC<LoginPageProps> = () => {
   const [number, setNumber] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useAppInitializer(); 
 
   const handleLogin = async () => {
     setIsLoading(true);
