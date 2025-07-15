@@ -10,9 +10,17 @@ interface Station {
   longitude: number;
 }
 
+interface VisibleRegion {
+  latitude: number;
+  longitude: number;
+  latitudeDelta: number;
+  longitudeDelta: number;
+}
+
 export default function usePaypassGeofenceEventSender(
   currentLocation?: { latitude: number; longitude: number },
-  stations: Station[] = []
+  stations: Station[] = [],
+  visibleRegion?: VisibleRegion
 ) {
   const prevInside = useRef<Set<number>>(new Set());
   const sentStationIds = useRef<Set<number>>(new Set());
@@ -24,7 +32,22 @@ export default function usePaypassGeofenceEventSender(
     const entered: Station[] = [];
     const exited: Station[] = [];
 
+    const isInVisibleRegion = (station: Station) => {
+      if (!visibleRegion) return true;
+      const latMin = visibleRegion.latitude - visibleRegion.latitudeDelta / 2;
+      const latMax = visibleRegion.latitude + visibleRegion.latitudeDelta / 2;
+      const lngMin = visibleRegion.longitude - visibleRegion.longitudeDelta / 2;
+      const lngMax = visibleRegion.longitude + visibleRegion.longitudeDelta / 2;
+
+      return (
+        station.latitude >= latMin && station.latitude <= latMax &&
+        station.longitude >= lngMin && station.longitude <= lngMax
+      );
+    };
+
     for (const station of stations) {
+      if (!isInVisibleRegion(station)) continue;
+
       const dist = getDistance(currentLocation, {
         latitude: Number(station.latitude),
         longitude: Number(station.longitude),
@@ -50,8 +73,8 @@ export default function usePaypassGeofenceEventSender(
       axios
         .post(`${Global.URL}/geofence/UserfenceIn`, {
           number: Global.NUMBER,
-          geofenceId: `station-${station.stationNumber}`,
-          geofenceName: station.name,
+          satationNumber: `station-${station.stationNumber}`,
+          name: station.name,
         })
         .then(() => {
           sentStationIds.current.add(station.stationNumber);
@@ -68,8 +91,8 @@ export default function usePaypassGeofenceEventSender(
       axios
         .post(`${Global.URL}/geofence/UserfenceOut`, {
           number: Global.NUMBER,
-          geofenceId: `station-${station.stationNumber}`,
-          geofenceName: station.name,
+          stationNumber: `station-${station.stationNumber}`,
+          name: station.name,
         })
         .then(() => {
           sentStationIds.current.delete(station.stationNumber);
@@ -81,5 +104,5 @@ export default function usePaypassGeofenceEventSender(
     });
 
     prevInside.current = nowInside;
-  }, [currentLocation?.latitude, currentLocation?.longitude, stations]);
+  }, [currentLocation?.latitude, currentLocation?.longitude, stations, visibleRegion]);
 }
