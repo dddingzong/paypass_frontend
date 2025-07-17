@@ -1,7 +1,7 @@
 import Global from '@/constants/Global';
 import { useRoute } from '@react-navigation/native';
 import axios from 'axios';
-import { Clock, MapPin } from 'lucide-react-native';
+import { Clock } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -68,7 +68,6 @@ const DetailLogPage: React.FC = () => {
         }
         setStationLocations(stationRes);
 
-        // 지도가 렌더링된 후 첫 정류장으로 이동
         setTimeout(() => {
           if (stationRes.length > 0 && mapRef.current) {
             mapRef.current.animateToRegion(
@@ -93,7 +92,6 @@ const DetailLogPage: React.FC = () => {
           fenceOutTime,
         });
         setUserPath(pathRes.data);
-
       } catch (e) {
         console.error('데이터 조회 실패:', e);
       } finally {
@@ -169,8 +167,7 @@ const DetailLogPage: React.FC = () => {
                     도착: {detailLogs[detailLogs.length - 1]?.stationName} (
                     {detailLogs[detailLogs.length - 1].fenceOutTime
                       ? formatTime(detailLogs[detailLogs.length - 1].fenceOutTime!)
-                      : '이탈 정보 없음'}
-                    )
+                      : '이탈 정보 없음'})
                   </Text>
                   <Text className="text-sm text-blue-600 mt-2">
                     {showAll ? '접기 ▲' : '전체 보기 ▼'}
@@ -178,30 +175,28 @@ const DetailLogPage: React.FC = () => {
                 </TouchableOpacity>
               )}
 
-              {showAll && detailLogs.map((item) => (
-                <View key={item.id} className="bg-white rounded-lg shadow-sm mb-4 p-4">
-                  <View className="flex-row items-center mb-2">
-                    <MapPin size={20} color="#2563eb" />
-                    <Text className="text-sm text-gray-800 ml-2">
-                      정류장: {item.stationName}
+              {showAll && detailLogs.length >= 2 && detailLogs.slice(0, -1).map((log, index) => {
+                const nextLog = detailLogs[index + 1];
+                return (
+                  <View key={log.id} className="bg-white rounded-lg shadow-sm mb-4 p-4">
+                    <Text className="text-sm text-gray-800 mb-2 font-bold">
+                      {log.stationName} → {nextLog.stationName}
                     </Text>
-                  </View>
-                  <View className="flex-row items-center">
-                    <Clock size={14} color="#6b7280" />
-                    <Text className="text-sm text-gray-600 ml-1">
-                      진입: {formatTime(item.fenceInTime)}
-                    </Text>
-                  </View>
-                  {item.fenceOutTime && (
+                    <View className="flex-row items-center">
+                      <Clock size={14} color="#6b7280" />
+                      <Text className="text-sm text-gray-600 ml-1">
+                        이탈: {formatTime(log.fenceOutTime || log.fenceInTime)}
+                      </Text>
+                    </View>
                     <View className="flex-row items-center mt-1">
                       <Clock size={14} color="#6b7280" />
                       <Text className="text-sm text-gray-600 ml-1">
-                        이탈: {formatTime(item.fenceOutTime)}
+                        진입: {formatTime(nextLog.fenceInTime)}
                       </Text>
                     </View>
-                  )}
-                </View>
-              ))}
+                  </View>
+                );
+              })}
             </View>
           </ScrollView>
 
