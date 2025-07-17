@@ -53,7 +53,7 @@ export default function usePaypassGeofenceEventSender(
         longitude: Number(station.longitude),
       });
 
-      const isIn = dist <= 70;
+      const isIn = dist <= 30;
 
       if (isIn) {
         nowInside.add(station.stationNumber);
@@ -70,10 +70,12 @@ export default function usePaypassGeofenceEventSender(
     entered.forEach((station) => {
       if (sentStationIds.current.has(station.stationNumber)) return;
 
+      console.log(station.stationNumber)
+
       axios
-        .post(`${Global.URL}/geofence/UserfenceIn`, {
+        .post(`${Global.URL}/geofence/userFenceIn`, {
           number: Global.NUMBER,
-          satationNumber: `station-${station.stationNumber}`,
+          stationNumber: station.stationNumber,
           name: station.name,
         })
         .then(() => {
@@ -89,7 +91,7 @@ export default function usePaypassGeofenceEventSender(
       if (!sentStationIds.current.has(station.stationNumber)) return;
 
       axios
-        .post(`${Global.URL}/geofence/UserfenceOut`, {
+        .post(`${Global.URL}/geofence/userfenceOut`, {
           number: Global.NUMBER,
           stationNumber: `station-${station.stationNumber}`,
           name: station.name,

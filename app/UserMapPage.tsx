@@ -166,7 +166,7 @@ const UserMapPage: React.FC = () => {
                 latitude: Number(station.latitude),
                 longitude: Number(station.longitude),
               }}
-              radius={70}
+              radius={30}
               strokeColor="rgba(59, 130, 246, 1)"
               fillColor="rgba(59, 130, 246, 0.2)"
             />
