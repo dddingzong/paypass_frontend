@@ -2,7 +2,7 @@ import Global from '@/constants/Global';
 import { useRoute } from '@react-navigation/native';
 import axios from 'axios';
 import { Clock, MapPin } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   SafeAreaView,
@@ -45,6 +45,7 @@ const DetailLogPage: React.FC = () => {
   const [userPath, setUserPath] = useState<UserLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
+  const mapRef = useRef<MapView>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -67,20 +68,31 @@ const DetailLogPage: React.FC = () => {
         }
         setStationLocations(stationRes);
 
-        // 사용자 위치 기반 이동 경로 조회
+        // 지도가 렌더링된 후 첫 정류장으로 이동
+        setTimeout(() => {
+          if (stationRes.length > 0 && mapRef.current) {
+            mapRef.current.animateToRegion(
+              {
+                latitude: stationRes[0].latitude,
+                longitude: stationRes[0].longitude,
+                latitudeDelta: 0.005,
+                longitudeDelta: 0.005,
+              },
+              1000
+            );
+          }
+        }, 500);
+
         const fenceInTime = logs[0]?.fenceInTime;
         const fenceOutTime = logs[logs.length - 1]?.fenceOutTime ?? logs[logs.length - 1]?.fenceInTime;
+        const userNumber = Global.USER_ROLE === 'supporter' ? Global.TARGET_NUMBER : Global.NUMBER;
 
         const pathRes = await axios.post(`${Global.URL}/user/getUserLocationList`, {
-          number: Global.NUMBER,
-          fenceInTime: fenceInTime,
-          fenceOutTime: fenceOutTime,
+          number: userNumber,
+          fenceInTime,
+          fenceOutTime,
         });
         setUserPath(pathRes.data);
-
-        console.log(pathRes.data);
-        console.log(typeof pathRes.data[0].latitude); // 'number'여야 함
-
 
       } catch (e) {
         console.error('데이터 조회 실패:', e);
@@ -92,12 +104,18 @@ const DetailLogPage: React.FC = () => {
     fetchData();
   }, [logId]);
 
-  const formatTime = (time: string) => time.slice(0, 16).replace('T', ' ');
+  const formatTime = (time: string) => {
+    const date = new Date(time);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hour = String(date.getHours()).padStart(2, '0');
+    const minute = String(date.getMinutes()).padStart(2, '0');
+    return `${month}월 ${day}일 ${hour}시 ${minute}분`;
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       <StatusBar barStyle="dark-content" backgroundColor="#f9fafb" />
-
       {loading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#2563eb" />
@@ -106,6 +124,7 @@ const DetailLogPage: React.FC = () => {
         <>
           {stationLocations.length > 0 && (
             <MapView
+              ref={mapRef}
               style={{ height: 300 }}
               initialRegion={{
                 latitude: stationLocations[0].latitude,
@@ -135,7 +154,7 @@ const DetailLogPage: React.FC = () => {
             </MapView>
           )}
 
-          <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
+          <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
             <View className="p-4">
               {detailLogs.length >= 2 && (
                 <TouchableOpacity
@@ -149,7 +168,9 @@ const DetailLogPage: React.FC = () => {
                   <Text className="text-sm text-gray-700 mb-1">
                     도착: {detailLogs[detailLogs.length - 1]?.stationName} (
                     {detailLogs[detailLogs.length - 1].fenceOutTime
-                      ? formatTime(detailLogs[detailLogs.length - 1].fenceOutTime!): '이탈 정보 없음'})
+                      ? formatTime(detailLogs[detailLogs.length - 1].fenceOutTime!)
+                      : '이탈 정보 없음'}
+                    )
                   </Text>
                   <Text className="text-sm text-blue-600 mt-2">
                     {showAll ? '접기 ▲' : '전체 보기 ▼'}
