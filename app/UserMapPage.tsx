@@ -21,6 +21,7 @@ const UserMapPage: React.FC = () => {
   const mapRef = useRef<MapView>(null);
   const [currentLocation, setCurrentLocation] = useState<Location.LocationObjectCoords | null>(null);
   const [visibleRegion, setVisibleRegion] = useState<Region | undefined>(undefined);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const paypassCenters = useMemo(() => Global.PAYPASS_CENTERS as Station[], []);
   const safeLocation = useMemo(() => {
@@ -28,9 +29,13 @@ const UserMapPage: React.FC = () => {
     return undefined;
   }, [currentLocation]);
 
+  const handleFenceIn = useCallback((stationName: string) => {
+    setToastMessage(`${stationName} 정류장에 진입했습니다.`);
+    setTimeout(() => setToastMessage(null), 1000);
+  }, []);
 
   const careGeofences = useCareGeofence(safeLocation);
-  usePaypassGeofenceEventSender(safeLocation, paypassCenters, visibleRegion);
+  usePaypassGeofenceEventSender(safeLocation, paypassCenters, visibleRegion, handleFenceIn);
 
   const moveToLocation = useCallback((coords: Location.LocationObjectCoords) => {
     mapRef.current?.animateToRegion({
@@ -118,6 +123,12 @@ const UserMapPage: React.FC = () => {
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+
+      {toastMessage && (
+        <View className="absolute bottom-28 left-4 right-4 bg-green-500 rounded-xl px-4 py-2 items-center z-50">
+          <Text className="text-white font-semibold">{toastMessage}</Text>
+        </View>
+      )}
 
       <View className="bg-white shadow-lg p-6 items-center">
         <Text className="text-2xl font-bold text-gray-900 mb-1">내 위치</Text>

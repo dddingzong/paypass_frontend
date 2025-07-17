@@ -17,10 +17,14 @@ interface VisibleRegion {
   longitudeDelta: number;
 }
 
+
+
 export default function usePaypassGeofenceEventSender(
   currentLocation?: { latitude: number; longitude: number },
   stations: Station[] = [],
-  visibleRegion?: VisibleRegion
+  visibleRegion?: VisibleRegion,
+  onFenceIn?: (stationName: string) => void  // ✅ 콜백 추가
+
 ) {
   const prevInside = useRef<Set<number>>(new Set());
   const sentStationIds = useRef<Set<number>>(new Set());
@@ -81,6 +85,7 @@ export default function usePaypassGeofenceEventSender(
         .then(() => {
           sentStationIds.current.add(station.stationNumber);
           console.log(`[진입] ${station.name}`);
+          if (onFenceIn) onFenceIn(station.name);  // ✅ 알림 트리거
         })
         .catch((err) => {
           console.warn(`[진입 실패] ${station.name}`, err);
