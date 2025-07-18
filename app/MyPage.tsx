@@ -201,9 +201,9 @@ const MyPage: React.FC = () => {
                   <User size={32} color="#2563EB" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-xl font-semibold">{userData.name}</Text>
+                  <Text className="text-xl font-semibold">   {userData.name}</Text>
                   <View className="mt-1">
-                    <View className="border border-gray-300 rounded-full px-2 py-1">
+                    <View className="ml-3 self-start inline-flex items-center border border-gray-300 rounded-full px-3 py-1">
                       <Text className="text-xs text-gray-600">{Global.USER_ROLE === 'supporter' ? '보호자' : '이용자'}</Text>
                     </View>
                   </View>
@@ -212,24 +212,24 @@ const MyPage: React.FC = () => {
 
               <View className="space-y-4">
                 <View>
-                  <Text className="text-sm font-bold text-gray-700 mb-1">이름</Text>
-                  <Text className="text-sm font-medium">{userData.name}</Text>
+                  <Text className="text-lg font-extrabold text-gray-850 mt-0.5">이름</Text>
+                  <Text className="text-sm font-medium mb-3">{userData.name}</Text>
                 </View>
                 <View>
-                  <Text className="text-sm font-medium text-gray-700 mb-1">전화번호</Text>
+                  <Text className="text-lg font-extrabold text-gray-850 mt-0.5">전화번호</Text>
                   <Text className="text-sm font-medium">{userData.number}</Text>
                 </View>
                 <View>
-                  <Text className="text-sm font-medium text-gray-700 mb-1">주소</Text>
+                  <Text className="text-lg font-extrabold text-gray-850 mt-0.5">주소</Text>
                   <Text className="text-sm font-medium">{userData.homeStreetAddress}</Text>
                   <Text className="text-sm text-gray-600">{userData.homeStreetAddressDetail}</Text>
                 </View>
 
                 {Global.USER_ROLE === 'user' && (
                   <View className="mt-4">
-                    <Text className="text-sm font-medium text-gray-700 mb-1">센터 주소</Text>
-                    <Text className="text-sm font-medium">{userData.centerStreetAddress}</Text>
-                    <Text className="text-sm font-medium text-gray-700 mt-3 mb-1">링크 코드</Text>
+                    <Text className="text-lg font-extrabold text-gray-850 mt-0.5">센터 주소</Text>
+                    <Text className="text-sm font-medium mb-3">{userData.centerStreetAddress}</Text>
+                    <Text className="text-lg font-extrabold text-gray-850 mt-0.5">링크 코드</Text>
                     <Text className="text-sm font-medium">{userData.linkCode}</Text>
                   </View>
                 )}
