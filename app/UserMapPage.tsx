@@ -7,7 +7,7 @@ import * as Location from 'expo-location';
 import { Locate, Navigation } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, SafeAreaView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
-import MapView, { Circle, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import MapView, { Circle, Marker, Polyline, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { customMapStyle } from '../styles/MapPageStyles';
 
 interface Station {
@@ -17,11 +17,17 @@ interface Station {
   longitude: number;
 }
 
+interface LatLng {
+  latitude: number;
+  longitude: number;
+}
+
 const UserMapPage: React.FC = () => {
   const mapRef = useRef<MapView>(null);
   const [currentLocation, setCurrentLocation] = useState<Location.LocationObjectCoords | null>(null);
   const [visibleRegion, setVisibleRegion] = useState<Region | undefined>(undefined);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [userPath, setUserPath] = useState<LatLng[]>([]);
 
   const paypassCenters = useMemo(() => Global.PAYPASS_CENTERS as Station[], []);
   const safeLocation = useMemo(() => {
@@ -66,6 +72,7 @@ const UserMapPage: React.FC = () => {
     initializeLocation();
   }, [initializeLocation]);
 
+  // 실시간 위치 서버 전송
   useEffect(() => {
     const sendLocation = async () => {
       if (!currentLocation) return;
@@ -74,8 +81,6 @@ const UserMapPage: React.FC = () => {
           number: Global.NUMBER,
           latitude: currentLocation.latitude,
           longitude: currentLocation.longitude,
-        }, {
-          headers: { 'Content-Type': 'application/json' },
         });
       } catch (err) {
         console.error('위치 전송 오류:', err);
@@ -85,6 +90,22 @@ const UserMapPage: React.FC = () => {
     const intervalId = setInterval(sendLocation, 5000);
     return () => clearInterval(intervalId);
   }, [currentLocation]);
+
+  // 사용자 이동 경로 요청 및 저장
+  useEffect(() => {
+    const fetchUserMovingHistory = async () => {
+      try {
+        const res = await axios.post(`${Global.URL}/geofence/getUserMovingHistory`, {
+          number: Global.NUMBER,
+        });
+        setUserPath(res.data); // [{ latitude, longitude }, ...]
+      } catch (err) {
+        console.error('이동 경로 불러오기 실패:', err);
+      }
+    };
+
+    fetchUserMovingHistory();
+  }, []);
 
   const moveToMyLocation = useCallback(() => {
     if (currentLocation) {
@@ -144,12 +165,8 @@ const UserMapPage: React.FC = () => {
           customMapStyle={customMapStyle}
           onRegionChangeComplete={(region) => setVisibleRegion(region)}
         >
-          <Marker
-            coordinate={region}
-            title="내 위치"
-            description="실시간 추적 중"
-            anchor={{ x: 0.5, y: 1 }}
-          >
+          {/* 실시간 사용자 위치 마커 */}
+          <Marker coordinate={region}>
             <View style={{ alignItems: 'center', width: 40 }}>
               <View className="p-3 rounded-full shadow-lg border-4 border-white bg-green-500">
                 <Navigation size={10} color="white" />
@@ -160,6 +177,16 @@ const UserMapPage: React.FC = () => {
             </View>
           </Marker>
 
+          {/* 사용자 이동 경로 Polyline */}
+          {userPath.length > 1 && (
+            <Polyline
+              coordinates={userPath}
+              strokeColor="#2563eb"
+              strokeWidth={4}
+            />
+          )}
+
+          {/* 지오펜스 */}
           {careGeofences.map((fence) => (
             <Circle
               key={fence.id}
@@ -170,13 +197,11 @@ const UserMapPage: React.FC = () => {
             />
           ))}
 
+          {/* 주변 정류장 */}
           {paypassCenters.filter(isInVisibleRegion).map((station) => (
             <Circle
               key={station.stationNumber}
-              center={{
-                latitude: Number(station.latitude),
-                longitude: Number(station.longitude),
-              }}
+              center={{ latitude: station.latitude, longitude: station.longitude }}
               radius={30}
               strokeColor="rgba(59, 130, 246, 1)"
               fillColor="rgba(59, 130, 246, 0.2)"
@@ -184,16 +209,10 @@ const UserMapPage: React.FC = () => {
           ))}
         </MapView>
 
+        {/* 현재 위치로 이동 버튼 */}
         <TouchableOpacity
           className="absolute bottom-20 right-4 bg-white p-4 rounded-full shadow-lg border border-gray-200"
           onPress={moveToMyLocation}
-          style={{
-            elevation: 8,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.15,
-            shadowRadius: 8,
-          }}
         >
           <Locate size={24} color="#2563eb" />
         </TouchableOpacity>
