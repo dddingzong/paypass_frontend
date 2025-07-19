@@ -3,7 +3,7 @@ import useCareGeofence from '@/app/hooks/userCareGeofence';
 import BottomNav from '@/app/src/components/BottomNav';
 import Global from '@/constants/Global';
 import axios from 'axios';
-import { Locate, User } from 'lucide-react-native';
+import { Locate } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, SafeAreaView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Circle, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
@@ -94,6 +94,8 @@ const SupporterMapPage: React.FC = () => {
           style={{ flex: 1 }}
           initialRegion={region}
           customMapStyle={customMapStyle}
+          showsPointsOfInterest={false}  
+          showsTraffic={false}
         >
           {careGeofences.map((fence) => (
             <Circle
@@ -104,21 +106,13 @@ const SupporterMapPage: React.FC = () => {
               fillColor={fence.fillColor}
             />
           ))}
+          {/* 실시간 사용자 위치 마커 */}
           <Marker
             coordinate={region}
-            title="이용자 위치"
-            description="최근 위치"
-            anchor={{ x: 0.5, y: 1 }}
-          >
-            <View style={{ alignItems: 'center', width: 40 }}>
-              <View className="p-3 rounded-full shadow-lg border-4 border-white bg-blue-500">
-                <User size={10} color="white" />
-              </View>
-              <View className="mt-1 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-200">
-                <Text className="text-xs font-medium text-blue-600">이용자 위치</Text>
-              </View>
-            </View>
-          </Marker>
+            image={require('@/assets/images/my_location.png')}
+            anchor={{ x: 0.5, y: 0.5 }} // 이미지 중앙 기준
+          />
+
         </MapView>
 
         <TouchableOpacity
@@ -130,7 +124,7 @@ const SupporterMapPage: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <BottomNav current="MapPage" />
+      <BottomNav current="MapRouterPage" />
     </SafeAreaView>
   );
 };

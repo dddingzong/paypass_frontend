@@ -4,7 +4,7 @@ import BottomNav from '@/app/src/components/BottomNav';
 import Global from '@/constants/Global';
 import axios from 'axios';
 import * as Location from 'expo-location';
-import { Locate, Navigation } from 'lucide-react-native';
+import { Locate } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, SafeAreaView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Circle, Marker, Polyline, PROVIDER_GOOGLE, Region } from 'react-native-maps';
@@ -141,6 +141,12 @@ const UserMapPage: React.FC = () => {
     );
   };
 
+  const getCareGeofenceIcon = (id: string) => {
+    if (id === 'home') return require('@/assets/images/home_icon64.png');
+    if (id === 'center') return require('@/assets/images/center_icon64.png');
+    return require('@/assets/images/station_pin64.png');
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
@@ -163,19 +169,16 @@ const UserMapPage: React.FC = () => {
           style={{ flex: 1 }}
           initialRegion={region}
           customMapStyle={customMapStyle}
+          showsPointsOfInterest={false}
+          showsTraffic={false}
           onRegionChangeComplete={(region) => setVisibleRegion(region)}
         >
           {/* 실시간 사용자 위치 마커 */}
-          <Marker coordinate={region}>
-            <View style={{ alignItems: 'center', width: 40 }}>
-              <View className="p-3 rounded-full shadow-lg border-4 border-white bg-green-500">
-                <Navigation size={10} color="white" />
-              </View>
-              <View className="mt-1 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-200">
-                <Text className="text-xs font-medium text-green-600">내 위치</Text>
-              </View>
-            </View>
-          </Marker>
+          <Marker
+            coordinate={region}
+            image={require('@/assets/images/my_location.png')}
+            anchor={{ x: 0.5, y: 0.5 }}
+          />
 
           {/* 사용자 이동 경로 Polyline */}
           {userPath.length > 1 && (
@@ -186,26 +189,38 @@ const UserMapPage: React.FC = () => {
             />
           )}
 
-          {/* 지오펜스 */}
+          {/* 지오펜스 + 아이콘 (id별 아이콘 적용) */}
           {careGeofences.map((fence) => (
-            <Circle
-              key={fence.id}
-              center={fence.center}
-              radius={fence.radius}
-              strokeColor={fence.strokeColor}
-              fillColor={fence.fillColor}
-            />
+            <React.Fragment key={`fence-${fence.id}`}>
+              <Circle
+                center={fence.center}
+                radius={fence.radius}
+                strokeColor={fence.strokeColor}
+                fillColor={fence.fillColor}
+              />
+              <Marker
+                coordinate={fence.center}
+                anchor={{ x: 0.5, y: 0.5 }}
+                image={getCareGeofenceIcon(fence.id)}
+              />
+            </React.Fragment>
           ))}
 
-          {/* 주변 정류장 */}
+          {/* 주변 정류장 + 아이콘 */}
           {paypassCenters.filter(isInVisibleRegion).map((station) => (
-            <Circle
-              key={station.stationNumber}
-              center={{ latitude: station.latitude, longitude: station.longitude }}
-              radius={30}
-              strokeColor="rgba(59, 130, 246, 1)"
-              fillColor="rgba(59, 130, 246, 0.2)"
-            />
+            <React.Fragment key={`station-${station.stationNumber}`}>
+              <Circle
+                center={{ latitude: station.latitude, longitude: station.longitude }}
+                radius={20}
+                strokeColor="rgba(59, 130, 246, 1)"
+                fillColor="rgba(59, 130, 246, 0.2)"
+              />
+              <Marker
+                coordinate={{ latitude: station.latitude, longitude: station.longitude }}
+                anchor={{ x: 0.5, y: 0.5 }}
+                image={require('@/assets/images/station_pin64.png')}
+              />
+            </React.Fragment>
           ))}
         </MapView>
 
@@ -218,7 +233,7 @@ const UserMapPage: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <BottomNav current="MapPage" />
+      <BottomNav current="MapRouterPage" />
     </SafeAreaView>
   );
 };
