@@ -77,26 +77,38 @@ export default function SelectRolePage() {
             {roles.map(role => {
               const Icon = role.icon;
               const isSelected = selectedRole === role.key;
+              const selectedIconColor = role.selectedColor === 'blue' ? '#2563eb' : '#16a34a';
+
               return (
                 <TouchableOpacity
                   key={role.key}
                   onPress={() => handleRoleSelect(role.key)}
                   className={`border-2 rounded-lg p-6 mb-2 ${
                     isSelected
-                      ? `border-${role.selectedColor}-500 bg-${role.selectedColor}-50`
+                      ? `border-${role.selectedColor}-500`
                       : 'border-gray-200 bg-white'
                   }`}
                   activeOpacity={0.7}
                 >
                   <View className="flex-row items-center space-x-4">
+                    {/* 아이콘 배경을 원형으로 처리 */}
                     <View
-                      className={`h-12 w-12 rounded-full flex items-center justify-center ${
-                        isSelected ? `bg-${role.selectedColor}-100` : 'bg-gray-100'
-                      }`}
+                      style={{
+                        height: 48,
+                        width: 48,
+                        borderRadius: 24,
+                        backgroundColor: isSelected
+                          ? (role.selectedColor === 'blue' ? '#dbeafe' : '#dcfce7')
+                          : '#f3f4f6',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginLeft: -12, // 왼쪽으로 4px 이동
+                        marginRight: 10, // 아이콘과 글자 사이 간격 조정
+                      }}
                     >
                       <Icon
                         size={24}
-                        color={isSelected ? (role.selectedColor === 'blue' ? '#2563eb' : '#16a34a') : '#6b7280'}
+                        color={isSelected ? selectedIconColor : '#6b7280'}
                       />
                     </View>
                     <View className="flex-1">
@@ -113,7 +125,7 @@ export default function SelectRolePage() {
                     {isSelected && (
                       <ArrowRight
                         size={20}
-                        color={role.selectedColor === 'blue' ? '#2563eb' : '#16a34a'}
+                        color={selectedIconColor}
                       />
                     )}
                   </View>
