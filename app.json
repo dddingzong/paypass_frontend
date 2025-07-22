@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "paypass_frontend",
-    "slug": "paypass_frontend",
+    "name": "paypass-frontend",
+    "slug": "paypass-frontend",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "paypass_frontend",
+    "scheme": "paypassfrontend",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -39,7 +39,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
@@ -49,6 +50,10 @@
       "eas": {
         "projectId": "96827ef2-ef33-4118-80f3-748a4ab362fd"
       }
-    }
+    },
+    "platforms": [
+      "android",
+      "ios"
+    ]
   }
 }
