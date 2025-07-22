@@ -10,9 +10,21 @@ interface Station {
   longitude: number;
 }
 
+interface VisibleRegion {
+  latitude: number;
+  longitude: number;
+  latitudeDelta: number;
+  longitudeDelta: number;
+}
+
+
+
 export default function usePaypassGeofenceEventSender(
   currentLocation?: { latitude: number; longitude: number },
-  stations: Station[] = []
+  stations: Station[] = [],
+  visibleRegion?: VisibleRegion,
+  onFenceIn?: (stationName: string) => void  // ✅ 콜백 추가
+
 ) {
   const prevInside = useRef<Set<number>>(new Set());
   const sentStationIds = useRef<Set<number>>(new Set());
@@ -24,13 +36,28 @@ export default function usePaypassGeofenceEventSender(
     const entered: Station[] = [];
     const exited: Station[] = [];
 
+    const isInVisibleRegion = (station: Station) => {
+      if (!visibleRegion) return true;
+      const latMin = visibleRegion.latitude - visibleRegion.latitudeDelta / 2;
+      const latMax = visibleRegion.latitude + visibleRegion.latitudeDelta / 2;
+      const lngMin = visibleRegion.longitude - visibleRegion.longitudeDelta / 2;
+      const lngMax = visibleRegion.longitude + visibleRegion.longitudeDelta / 2;
+
+      return (
+        station.latitude >= latMin && station.latitude <= latMax &&
+        station.longitude >= lngMin && station.longitude <= lngMax
+      );
+    };
+
     for (const station of stations) {
+      if (!isInVisibleRegion(station)) continue;
+
       const dist = getDistance(currentLocation, {
         latitude: Number(station.latitude),
         longitude: Number(station.longitude),
       });
 
-      const isIn = dist <= 70;
+      const isIn = dist <= 30;
 
       if (isIn) {
         nowInside.add(station.stationNumber);
@@ -47,15 +74,18 @@ export default function usePaypassGeofenceEventSender(
     entered.forEach((station) => {
       if (sentStationIds.current.has(station.stationNumber)) return;
 
+      console.log(station.stationNumber)
+
       axios
-        .post(`${Global.URL}/geofence/UserfenceIn`, {
+        .post(`${Global.URL}/geofence/userFenceIn`, {
           number: Global.NUMBER,
-          geofenceId: `station-${station.stationNumber}`,
-          geofenceName: station.name,
+          stationNumber: station.stationNumber,
+          name: station.name,
         })
         .then(() => {
           sentStationIds.current.add(station.stationNumber);
           console.log(`[진입] ${station.name}`);
+          if (onFenceIn) onFenceIn(station.name);  // ✅ 알림 트리거
         })
         .catch((err) => {
           console.warn(`[진입 실패] ${station.name}`, err);
@@ -66,10 +96,10 @@ export default function usePaypassGeofenceEventSender(
       if (!sentStationIds.current.has(station.stationNumber)) return;
 
       axios
-        .post(`${Global.URL}/geofence/UserfenceOut`, {
+        .post(`${Global.URL}/geofence/userFenceOut`, {
           number: Global.NUMBER,
-          geofenceId: `station-${station.stationNumber}`,
-          geofenceName: station.name,
+          stationNumber: station.stationNumber,
+          name: station.name,
         })
         .then(() => {
           sentStationIds.current.delete(station.stationNumber);
@@ -81,5 +111,5 @@ export default function usePaypassGeofenceEventSender(
     });
 
     prevInside.current = nowInside;
-  }, [currentLocation?.latitude, currentLocation?.longitude, stations]);
+  }, [currentLocation?.latitude, currentLocation?.longitude, stations, visibleRegion]);
 }

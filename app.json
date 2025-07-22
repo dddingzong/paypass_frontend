@@ -21,7 +21,8 @@
         "googleMaps": {
           "apiKey": "AIzaSyBwR5FvsDa4kUc3FTD14svwssHNM-tUhSM"
         }
-      }
+      },
+      "package": "com.chungjongin.paypass_frontend"
     },
     "web": {
       "bundler": "metro",
@@ -42,6 +43,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "96827ef2-ef33-4118-80f3-748a4ab362fd"
+      }
     }
   }
 }

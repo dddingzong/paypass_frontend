@@ -37,7 +37,7 @@ export default function useCareGeofence(currentLocation?: { latitude: number; lo
 
   useEffect(() => {
     const shouldFetch =
-      (Global.USER_ROLE === 'user') ||
+      Global.USER_ROLE === 'user' ||
       (Global.USER_ROLE === 'supporter' && Global.TARGET_NUMBER);
 
     if (!shouldFetch) return;
@@ -61,15 +61,15 @@ export default function useCareGeofence(currentLocation?: { latitude: number; lo
           id: 'home',
           name: '집',
           center: { latitude: homeLatitude, longitude: homeLongitude },
-          radius: 100,
-          strokeColor: 'rgba(0, 122, 255, 0.5)',
-          fillColor: 'rgba(0, 122, 255, 0.1)',
+          radius: 60,
+          strokeColor: 'rgba(255, 122, 0, 0.5)',
+          fillColor: 'rgba(255, 122, 0, 0.1)',
         },
         {
           id: 'center',
           name: '센터',
           center: { latitude: centerLatitude, longitude: centerLongitude },
-          radius: 100,
+          radius: 60,
           strokeColor: 'rgba(255, 122, 0, 0.5)',
           fillColor: 'rgba(255, 122, 0, 0.1)',
         },
@@ -92,41 +92,25 @@ export default function useCareGeofence(currentLocation?: { latitude: number; lo
       if (dist <= fence.radius) {
         isInside = true;
 
-        if (!currentFence) {
-          setCurrentFence(fence.name);
-          setLastEntry({ name: fence.name, time: now });
-        } else if (currentFence !== fence.name) {
-          if (lastEntry) {
-            const diffMinutes = (now.getTime() - lastEntry.time.getTime()) / 1000 / 60;
+        if (!currentFence || currentFence !== fence.name) {
+          const diffMinutes = lastEntry
+            ? (now.getTime() - lastEntry.time.getTime()) / 1000 / 60
+            : 0;
 
-            if (diffMinutes <= 60) {
-              const payload = {
+          if (lastEntry && diffMinutes <= 60 && currentFence) {
+            axios
+              .post(`${Global.URL}/geofence/careGeofence/algorithm`, {
                 number: Global.NUMBER,
                 history: [
                   { name: lastEntry.name, time: lastEntry.time.toISOString() },
                   { name: fence.name, time: now.toISOString() },
-                ]
-              };
-
-              axios
-                .post(`${Global.URL}/geofence/careGeofence/algorithm`, payload, {
-                  headers: { 'Content-Type': 'application/json' },
-                })
-                .then((res) => {
-                  console.log('서버 응답:', res.data);
-                })
-                .catch((err) => {
-                  console.warn('지오펜스 이동 전송 실패:', err);
-                });
-
-              setLastEntry(null);
-            } else {
-              setLastEntry({ name: fence.name, time: now });
-            }
+                ],
+              })
+              .then((res) => console.log('서버 응답:', res.data))
+              .catch((err) => console.warn('지오펜스 이동 전송 실패:', err));
           }
 
           setCurrentFence(fence.name);
-        } else {
           setLastEntry({ name: fence.name, time: now });
         }
 
@@ -137,7 +121,7 @@ export default function useCareGeofence(currentLocation?: { latitude: number; lo
     if (!isInside) {
       setCurrentFence(null);
     }
-  }, [currentLocation, careGeofences, currentFence, lastEntry]);
+  }, [currentLocation, careGeofences]);
 
   return careGeofences;
 }

@@ -5,9 +5,10 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import axios from 'axios';
 import { Bell, Clock, MapPin } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
-import { BackHandler, FlatList, SafeAreaView, StatusBar, Text, View } from 'react-native';
+import { BackHandler, FlatList, SafeAreaView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 
 interface Notification {
+  id: number;
   number: string;
   name: string;
   departureTime: string;
@@ -20,6 +21,7 @@ type RootStackParamList = {
   MapRouterPage: undefined;
   LinkPage: undefined;
   LogPage: undefined;
+  DetailLogPage: { logId: number }; // 추가
   MyPage: undefined;
   SelectRole: undefined;
 };
@@ -72,35 +74,37 @@ const LogPage: React.FC = () => {
   );
 
   const renderNotificationCard = ({ item }: { item: Notification }) => (
+  <TouchableOpacity onPress={() => navigation.navigate('DetailLogPage', { logId: item.id })}>
     <View className="bg-white rounded-lg shadow-sm mb-4 p-4">
-      <View className="flex-row items-start justify-between">
-        <View className="flex-1">
-          <View className="flex-row items-center mb-2">
-            <View className="h-12 w-12 bg-blue-100 rounded-full items-center justify-center mr-3 mt-2">
-              <MapPin size={20} color="#2563eb" />
-            </View>
-            <View className="flex-1">
-              <Text className="font-medium text-gray-900">{item.name} 님의 이동 기록</Text>
-              <View className="flex-row items-center mt-1">
-                <Clock size={12} color="#6b7280" />
-                <Text className="text-sm text-gray-500 ml-1">
-                  출발: {formatDateTime(item.departureTime)}
-                </Text>
+        <View className="flex-row items-start justify-between">
+          <View className="flex-1">
+            <View className="flex-row items-center mb-2">
+              <View className="h-12 w-12 bg-blue-100 rounded-full items-center justify-center mr-3 mt-2">
+                <MapPin size={20} color="#2563eb" />
               </View>
-              <View className="flex-row items-center mt-1">
-                <Clock size={12} color="#6b7280" />
-                <Text className="text-sm text-gray-500 ml-1">
-                  도착: {formatDateTime(item.arrivalTime)}
-                </Text>
+              <View className="flex-1">
+                <Text className="font-medium text-gray-900">{item.name} 님의 이동 기록</Text>
+                <View className="flex-row items-center mt-1">
+                  <Clock size={12} color="#6b7280" />
+                  <Text className="text-sm text-gray-500 ml-1">
+                    출발: {formatDateTime(item.departureTime)}
+                  </Text>
+                </View>
+                <View className="flex-row items-center mt-1">
+                  <Clock size={12} color="#6b7280" />
+                  <Text className="text-sm text-gray-500 ml-1">
+                    도착: {formatDateTime(item.arrivalTime)}
+                  </Text>
+                </View>
               </View>
             </View>
+            <Text className="text-sm text-gray-600 mt-2">
+              {item.departureLocation}에서 {item.arrivalLocation}으로 이동하셨습니다.
+            </Text>
           </View>
-          <Text className="text-sm text-gray-600 mt-2">
-            {item.departureLocation}에서 {item.arrivalLocation}으로 이동하셨습니다.
-          </Text>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
