@@ -109,7 +109,7 @@ const SupporterMapPage: React.FC = () => {
           {/* 실시간 사용자 위치 마커 */}
           <Marker
             coordinate={region}
-            image={require('@/assets/images/my_location.png')}
+            image={require('@/assets/images/my_location_icon128.png')}
             anchor={{ x: 0.5, y: 0.5 }} // 이미지 중앙 기준
           />
 
