@@ -6,7 +6,20 @@ import SelectRole from '@/app/SelectRole';
 import index from '@/app/index';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { initializeApp } from 'firebase/app';
 import React from 'react';
+
+const firebaseConfig = {
+  apiKey: "API_KEY",
+  authDomain: "PROJECT_ID.firebaseapp.com",
+  projectId: "PROJECT_ID",
+  storageBucket: "PROJECT_ID.appspot.com",
+  messagingSenderId: "SENDER_ID",
+  appId: "APP_ID",
+};
+
+// ✅ 앱 시작 시 Firebase 초기화
+initializeApp(firebaseConfig);
 
 const Stack = createStackNavigator();
 
@@ -20,7 +33,6 @@ const App = () => {
         <Stack.Screen name="LogPage" component={LogPage} />
         <Stack.Screen name="MyPage" component={MyPage} />
         <Stack.Screen name="LinkPage" component={LinkPage} />
-        {/* 필요한 페이지를 여기에 계속 등록 */}
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "758558328743",
+    "project_id": "paypass-frontend",
+    "storage_bucket": "paypass-frontend.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:758558328743:android:17dab106d7a922b2d69882",
+        "android_client_info": {
+          "package_name": "com.chungjongin.paypass_frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBq9lw1ygMkG0vlz_dww8qrlQy1A36bC3U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
