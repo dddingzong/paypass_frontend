@@ -96,9 +96,9 @@ export default function usePaypassGeofenceEventSender(
       if (!sentStationIds.current.has(station.stationNumber)) return;
 
       axios
-        .post(`${Global.URL}/geofence/userfenceOut`, {
+        .post(`${Global.URL}/geofence/userFenceOut`, {
           number: Global.NUMBER,
-          stationNumber: `station-${station.stationNumber}`,
+          stationNumber: station.stationNumber,
           name: station.name,
         })
         .then(() => {
