@@ -37,7 +37,7 @@ const UserMapPage: React.FC = () => {
 
   const handleFenceIn = useCallback((stationName: string) => {
     setToastMessage(`${stationName} 정류장에 진입했습니다.`);
-    setTimeout(() => setToastMessage(null), 1000);
+    setTimeout(() => setToastMessage(null), 3000);
   }, []);
 
   const careGeofences = useCareGeofence(safeLocation);
@@ -102,6 +102,7 @@ const UserMapPage: React.FC = () => {
         {
           accuracy: Location.Accuracy.High,
           timeInterval: 1000,
+          distanceInterval: 0,
         },
         (location) => {
           const { latitude, longitude } = location.coords;
@@ -136,7 +137,7 @@ const UserMapPage: React.FC = () => {
       }
     };
 
-    const intervalId = setInterval(sendLocation, 5000);
+    const intervalId = setInterval(sendLocation, 1000);
     return () => clearInterval(intervalId);
   }, [currentLocation]);
 
