@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Modal,
   SafeAreaView,
   ScrollView,
@@ -13,7 +14,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 
 interface WalletInfo {
@@ -133,6 +134,21 @@ const WalletPage: React.FC = () => {
           <View className="flex-row items-center mb-3">
             <Wallet size={20} color="#2563eb" />
             <Text className="ml-2 text-lg font-bold text-gray-800">보유 현금</Text>
+          </View>
+          {/* paypass_card.png 이미지 삽입 */}
+          <View
+            style={{
+              padding: 14,
+              backgroundColor: '#f3f4f6', // 연한 배경
+              borderRadius: 12,
+              alignItems: 'center',
+              marginBottom: 12,
+            }}
+          >
+            <Image
+              source={require('@/assets/images/paypass_card.png')}
+              style={{ width: 400, height: 180 }}
+            />
           </View>
           <Text className="text-2xl font-extrabold text-green-600 mb-4">
             {walletInfo.balance.toLocaleString()}원
