@@ -1,9 +1,10 @@
+import index from '@/app/index';
 import LinkPage from '@/app/LinkPage';
 import LogPage from '@/app/LogPage';
 import MapRouterPage from '@/app/MapRouterPage';
 import MyPage from '@/app/MyPage';
 import SelectRole from '@/app/SelectRole';
-import index from '@/app/index';
+import WalletPage from '@/app/WalletPage';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { initializeApp } from 'firebase/app';
@@ -33,6 +34,7 @@ const App = () => {
         <Stack.Screen name="LogPage" component={LogPage} />
         <Stack.Screen name="MyPage" component={MyPage} />
         <Stack.Screen name="LinkPage" component={LinkPage} />
+        <Stack.Screen name="WalletPage" component={WalletPage} />
       </Stack.Navigator>
     </NavigationContainer>
   );

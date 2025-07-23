@@ -1,8 +1,9 @@
 import Global from '@/constants/Global';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { Bell, MapPin, User, Users } from 'lucide-react-native';
+import { Bell, MapPin, User, Users, Wallet as WalletIcon } from 'lucide-react-native';
 import { Text, TouchableOpacity, View } from 'react-native';
+
 
 type RootStackParamList = {
   MapRouterPage: undefined;
@@ -10,6 +11,7 @@ type RootStackParamList = {
   MyPage: undefined;
   LinkPage: undefined;
   SelectRole: undefined;
+  WalletPage: undefined;
 };
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
@@ -26,6 +28,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ current }) => {
   const userTabs: { screen: ScreenName; icon: React.FC<any>; label: string }[] = [
     { screen: 'MapRouterPage', icon: MapPin, label: '지도' },
     { screen: 'LogPage', icon: Bell, label: '기록' },
+    { screen: 'WalletPage', icon: WalletIcon, label: '지갑' },
     { screen: 'MyPage', icon: User, label: '마이페이지' },
   ];
 
@@ -33,6 +36,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ current }) => {
     { screen: 'MapRouterPage', icon: MapPin, label: '지도' },
     { screen: 'LinkPage', icon: Users, label: '이용자' },
     { screen: 'LogPage', icon: Bell, label: '기록' },
+    { screen: 'WalletPage', icon: WalletIcon, label: '지갑' },
     { screen: 'MyPage', icon: User, label: '마이페이지' },
   ];
 
