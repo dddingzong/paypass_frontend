@@ -25,6 +25,7 @@ interface LatLng {
 const UserMapPage: React.FC = () => {
   const mapRef = useRef<MapView>(null);
   const [currentLocation, setCurrentLocation] = useState<Location.LocationObjectCoords | null>(null);
+  const currentLocationRef = useRef<Location.LocationObjectCoords | null>(null); // 최신 위치 참조
   const [visibleRegion, setVisibleRegion] = useState<Region | undefined>(undefined);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [userPath, setUserPath] = useState<LatLng[]>([]);
@@ -44,12 +45,15 @@ const UserMapPage: React.FC = () => {
   usePaypassGeofenceEventSender(safeLocation, paypassCenters, visibleRegion, handleFenceIn);
 
   const moveToLocation = useCallback((coords: Location.LocationObjectCoords) => {
-    mapRef.current?.animateToRegion({
-      latitude: coords.latitude,
-      longitude: coords.longitude,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    }, 1000);
+    mapRef.current?.animateToRegion(
+      {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      },
+      1000
+    );
   }, []);
 
   const initializeLocation = useCallback(async () => {
@@ -62,6 +66,7 @@ const UserMapPage: React.FC = () => {
     try {
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       setCurrentLocation(pos.coords);
+      currentLocationRef.current = pos.coords;
       moveToLocation(pos.coords);
     } catch {
       Alert.alert('오류', '위치를 가져올 수 없습니다.');
@@ -80,7 +85,7 @@ const UserMapPage: React.FC = () => {
           number: Global.NUMBER,
         });
         setUserPath(res.data); // 초기 경로 로드
-        console.log("유저 이동경로 초기 로딩:", res.data);
+        console.log('유저 이동경로 초기 로딩:', res.data);
       } catch (err) {
         console.error('이동 경로 불러오기 실패:', err);
       }
@@ -88,15 +93,13 @@ const UserMapPage: React.FC = () => {
     fetchUserMovingHistory();
   }, []);
 
-  // 2. 실시간 위치 추적 + Polyline 실시간 갱신 (1초마다)
+  // 2. 실시간 위치 추적 + Polyline 실시간 갱신
   useEffect(() => {
     let locationSubscription: Location.LocationSubscription;
 
     const startWatching = async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        return;
-      }
+      if (status !== 'granted') return;
 
       locationSubscription = await Location.watchPositionAsync(
         {
@@ -107,6 +110,7 @@ const UserMapPage: React.FC = () => {
         (location) => {
           const { latitude, longitude } = location.coords;
           setCurrentLocation(location.coords);
+          currentLocationRef.current = location.coords;
           setUserPath((prevPath) => {
             const newPath = [...prevPath, { latitude, longitude }];
             return newPath.length > 300 ? newPath.slice(newPath.length - 300) : newPath;
@@ -123,23 +127,22 @@ const UserMapPage: React.FC = () => {
 
   // 3. 서버로 위치 전송 (5초마다)
   useEffect(() => {
-    const sendLocation = async () => {
-      if (!currentLocation) return;
+    const intervalId = setInterval(async () => {
+      if (!currentLocationRef.current) return;
       try {
         await axios.post(`${Global.URL}/user/saveUserLocation`, {
           number: Global.NUMBER,
-          latitude: currentLocation.latitude,
-          longitude: currentLocation.longitude,
+          latitude: currentLocationRef.current.latitude,
+          longitude: currentLocationRef.current.longitude,
         });
-        console.log("서버에 위치 전송:", currentLocation);
+        console.log('서버에 위치 전송:', currentLocationRef.current);
       } catch (err) {
         console.error('위치 전송 오류:', err);
       }
-    };
+    }, 5000);
 
-    const intervalId = setInterval(sendLocation, 1000);
     return () => clearInterval(intervalId);
-  }, [currentLocation]);
+  }, []); // currentLocation 제거
 
   const moveToMyLocation = useCallback(() => {
     if (currentLocation) {
@@ -170,8 +173,10 @@ const UserMapPage: React.FC = () => {
     const lngMax = visibleRegion.longitude + visibleRegion.longitudeDelta / 2;
 
     return (
-      station.latitude >= latMin && station.latitude <= latMax &&
-      station.longitude >= lngMin && station.longitude <= lngMax
+      station.latitude >= latMin &&
+      station.latitude <= latMax &&
+      station.longitude >= lngMin &&
+      station.longitude <= lngMax
     );
   };
 
@@ -216,11 +221,7 @@ const UserMapPage: React.FC = () => {
 
           {/* 사용자 이동 경로 Polyline */}
           {userPath.length > 1 && (
-            <Polyline
-              coordinates={userPath}
-              strokeColor="#2563eb"
-              strokeWidth={4}
-            />
+            <Polyline coordinates={userPath} strokeColor="#2563eb" strokeWidth={4} />
           )}
 
           {/* 지오펜스 + 아이콘 */}
