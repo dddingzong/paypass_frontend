@@ -246,7 +246,7 @@ const UserMapPage: React.FC = () => {
             <React.Fragment key={`station-${station.stationNumber}`}>
               <Circle
                 center={{ latitude: station.latitude, longitude: station.longitude }}
-                radius={20}
+                radius={60}
                 strokeColor="rgba(59, 130, 246, 1)"
                 fillColor="rgba(59, 130, 246, 0.2)"
               />
